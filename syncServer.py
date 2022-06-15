@@ -5,14 +5,14 @@ import hashlib
 
 
 class RequestHandler:
-    def __init__(self, sock, chunk_size=65536):
+    def __init__(self, sock, chunk_size=2**16):
         self.sock = sock
         self.chunk_size = chunk_size
 
     def loop(self):
         request = self.sock.recv(1024)
         if request.split(b":")[0] == b"recv_file":
-            self.file_request_handler(request.decode("ASCII").split(":")[1])
+            print(self.file_request_handler(request.decode("ASCII").split(":")[1]))
 
     def file_request_handler(self, netfile):
         filepath = netfile  # CHANGE ME LATER
@@ -28,19 +28,25 @@ class RequestHandler:
             self.sock.sendall(str(self.chunk_size).encode("ASCII"))
 
         local_file_hash = send_file(self.sock, filepath, self.chunk_size, num_of_chunks)
+        if local_file_hash is False:
+            return False
+        return send_hash(self.sock, local_file_hash)
 
 
 def send_hash(sock, local_file_hash):
     request = sock.recv(1024)
+    print("requesting hash?")
     if not request == b"REQ_NET_HASH":
         return False
+    print("sending hash")
 
     sock.sendall(local_file_hash)
+    return True
 
 
 def send_file(sock, filepath, chunk_size, num_of_chunks):
     hasher = hashlib.sha256()
-    with open(filepath, "r") as f:
+    with open(filepath, "br") as f:
         for n in range(num_of_chunks):
             print("r")
             request = sock.recv(1024)
@@ -55,8 +61,7 @@ def send_file(sock, filepath, chunk_size, num_of_chunks):
 
             read = f.read(chunk_size)
             hasher.update(read)
-            print(read)
-            sock.sendall(read.encode("utf8"))
+            sock.sendall(read)
 
     return hasher.digest()
 
