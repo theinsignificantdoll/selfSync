@@ -9,8 +9,9 @@ to_delete_file = "todelete.file"
 
 
 class FileManager:
-    def __int__(self):
+    def __init__(self):
         self.net_homes = {}  # USES Path OBJECTS
+        self.within_net_home = []
 
     def net_home_to_loc_home(self, net_home):
         try:
@@ -22,12 +23,25 @@ class FileManager:
         p = Path(path)
         self.net_homes[p.parts[-1]] = p
 
+    def update_within_net_home(self, home, comm):
+        pass
+
 
 file_manager = FileManager()
 
 
 class Manager:
-    def __init__(self):
+    def __init__(self, comm, search_dir=None, single_file=None):
+        self.comm = comm
+        if search_dir is None and single_file is None:
+            raise Exception("Lacking search_dir or single_file (Both are == None)")
+        if single_file is not None:
+            self.do_single_file(single_file)
+
+            return
+        self.search_dir = search_dir
+
+    def do_single_file(self, single_file):
         pass
 
 
@@ -37,6 +51,9 @@ class Communicator:
         self.port = port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((host, port))
+
+    def get_files_within_home(self, home):
+        self.sock.sendall(f"REQ_FILES_IN_HOME:{home}".encode("ASCII"))
 
     def get_file(self, netfile):
         """
@@ -59,8 +76,7 @@ class Communicator:
         :param netfile:
         :return: True if success otherwise False
         """
-
-        self.sock.sendall(f"recv_file:{netfile.path}".encode("ASCII"))
+        self.sock.sendall(f"recv_file:{netfile.net_path}".encode("ASCII"))
         print("recving")
         response = self.sock.recv(1024)
         print("recved")
@@ -128,16 +144,17 @@ class Communicator:
         if os.path.exists(locfile.local_path):
             os.rename(locfile.local_path, to_delete_file)
         os.rename(temp_file, locfile.local_path)
-        os.remove(to_delete_file)
+        if os.path.exists(to_delete_file):
+            os.remove(to_delete_file)
         return True
 
 
 def net_to_locfile(netfile):
-    return LocalFile(netfile.path, file_manager.net_home_to_loc_home(netfile.home))
+    return LocalFile(netfile.path, file_manager.net_home_to_loc_home(netfile.home), netfile.ver)
 
 
 def loc_to_netfile(locfile):
-    return NetFile(locfile.path, locfile.home.parts[-1])
+    return NetFile(locfile.path, locfile.home.parts[-1], locfile.ver)
 
 
 class ServerPath:
@@ -149,21 +166,23 @@ class ServerPath:
 
 
 class LocalFile:
-    def __init__(self, path, home):
+    def __init__(self, path, home, ver):
         self.path = Path(path)
         self.path_home = Path(home)
+        self.ver = ver
         self.local_path = self.path_home / self.path
 
 
 class NetFile:
-    def __init__(self, path, home):
+    def __init__(self, path, home, ver):
         self.path = Path(path)
         self.home = Path(home)
+        self.ver = ver
         self.net_path = self.home / self.path
 
 
 if __name__ == "__main__":
     c = Communicator()
     file_manager.add_dir("clientdir")
-    print(c.get_file(NetFile("not_temp_file.file", "clientdir")))
-    print(c.get_file(NetFile("more_not_file.file", "clientdir")))
+    print(c.get_file(NetFile("not_temp_file.file", "clientdir", 0)))
+    print(c.get_file(NetFile("more_not_file.file", "clientdir", 0)))

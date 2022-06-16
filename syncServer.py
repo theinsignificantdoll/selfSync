@@ -8,6 +8,11 @@ from pathlib import Path
 serverstor = Path("serverstor")
 
 
+class FileManager:
+    def __init__(self, serverstor=serverstor):
+        self.serverstor = serverstor
+
+
 class RequestHandler:
     def __init__(self, sock, chunk_size=2**16):
         self.sock = sock
@@ -17,8 +22,14 @@ class RequestHandler:
         request = self.sock.recv(1024)
         if request.split(b":")[0] == b"recv_file":
             print(self.file_request_handler(request.decode("ASCII").split(":")[1]))
+        elif request.split(b":")[0] == b"REQ_FILES_IN_HOME":
+            print(self.files_in_home_handler(Path(str(request.split(b":")[1]))))
+
+    def files_in_home_handler(self, home):
+        pass
 
     def file_request_handler(self, netfile):
+        print(netfile)
         filepath = netfile
         full_file_path = serverstor / filepath
         file_size = os.path.getsize(full_file_path)
