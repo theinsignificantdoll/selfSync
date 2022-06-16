@@ -1,10 +1,29 @@
 import socket
 import hashlib
 import os
+from pathlib import Path
 
 
 temp_file = "temp.file"
 to_delete_file = "todelete.file"
+
+
+class FileManager:
+    def __int__(self):
+        self.net_homes = {}  # USES Path OBJECTS
+
+    def net_home_to_loc_home(self, net_home):
+        try:
+            return self.net_homes[net_home]
+        except KeyError:
+            return ""
+
+    def add_dir(self, path):
+        p = Path(path)
+        self.net_homes[p.parts[-1]] = p
+
+
+file_manager = FileManager()
 
 
 class Manager:
@@ -106,15 +125,19 @@ class Communicator:
         :return: True if success otherwise False
         """
         locfile = net_to_locfile(netfile)
-        if os.path.exists(locfile.path):
-            os.rename(locfile.path, to_delete_file)
-        os.rename(temp_file, locfile.path)
+        if os.path.exists(locfile.local_path):
+            os.rename(locfile.local_path, to_delete_file)
+        os.rename(temp_file, locfile.local_path)
         os.remove(to_delete_file)
         return True
 
 
 def net_to_locfile(netfile):
-    return LocalFile(netfile.path)
+    return LocalFile(netfile.path, file_manager.net_home_to_loc_home(netfile.home))
+
+
+def loc_to_netfile(locfile):
+    return NetFile(locfile.path, locfile.home.parts[-1])
 
 
 class ServerPath:
@@ -126,16 +149,21 @@ class ServerPath:
 
 
 class LocalFile:
-    def __init__(self, path):
-        self.path = path
+    def __init__(self, path, home):
+        self.path = Path(path)
+        self.path_home = Path(home)
+        self.local_path = self.path_home / self.path
 
 
 class NetFile:
-    def __init__(self, path):
-        self.path = path
+    def __init__(self, path, home):
+        self.path = Path(path)
+        self.home = Path(home)
+        self.net_path = self.home / self.path
 
 
 if __name__ == "__main__":
     c = Communicator()
-    print(c.get_file(NetFile("not_temp_file.file")))
-    print(c.get_file(NetFile("more_not_file.file")))
+    file_manager.add_dir("clientdir")
+    print(c.get_file(NetFile("not_temp_file.file", "clientdir")))
+    print(c.get_file(NetFile("more_not_file.file", "clientdir")))

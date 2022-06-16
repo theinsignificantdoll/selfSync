@@ -2,6 +2,10 @@ import socket
 import time
 import os
 import hashlib
+from pathlib import Path
+
+
+serverstor = Path("serverstor")
 
 
 class RequestHandler:
@@ -15,8 +19,9 @@ class RequestHandler:
             print(self.file_request_handler(request.decode("ASCII").split(":")[1]))
 
     def file_request_handler(self, netfile):
-        filepath = netfile  # CHANGE ME LATER
-        file_size = os.path.getsize(filepath)
+        filepath = netfile
+        full_file_path = serverstor / filepath
+        file_size = os.path.getsize(full_file_path)
         num_of_chunks = file_size // self.chunk_size + 1
         self.sock.sendall(b"Affirmative")
         request = self.sock.recv(1024)
@@ -27,7 +32,7 @@ class RequestHandler:
         if request == b"REQ_CHUNK_SIZE":
             self.sock.sendall(str(self.chunk_size).encode("ASCII"))
 
-        local_file_hash = send_file(self.sock, filepath, self.chunk_size, num_of_chunks)
+        local_file_hash = send_file(self.sock, full_file_path, self.chunk_size, num_of_chunks)
         if local_file_hash is False:
             return False
         return send_hash(self.sock, local_file_hash)
