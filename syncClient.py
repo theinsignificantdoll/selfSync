@@ -8,15 +8,33 @@ CHUNK_SIZE = 2**16
 
 
 temp_file = "temp.file"
+index_temp_file = "temp_index.file"
 to_delete_file = "todelete.file"
+index_extension = ".index"
+
+
+def home_to_home_index(home: str):
+    return f"{home}{index_extension}"
+
+
+def home_index_to_home(home_index: str):
+    return home_index.rstrip(index_extension)
 
 
 class LocalFile:
-    def __init__(self, path, home, ver):
+    def __init__(self, path, home, ver, timestamp=None):
         self.path = Path(path)
-        self.path_home = Path(home)
+        self.home = Path(home)
         self.ver = ver
-        self.local_path = self.path_home / self.path
+        self.local_path = self.home / self.path
+
+        if timestamp is None:
+            if not os.path.exists(self.local_path):
+                timestamp = 0
+            else:
+                self.timestamp = os.path.getmtime(self.local_path)
+        else:
+            self.timestamp = timestamp
 
 
 class NetFile:
@@ -26,11 +44,15 @@ class NetFile:
         self.ver = ver
         self.net_path = self.home / self.path
 
+    def __repr__(self):
+        return f"NetFile({self.path}, {self.home}, {self.ver})"
+
 
 class FileManager:
     def __init__(self):
         self.net_homes = {}  # USES Path OBJECTS
         self.within_net_home = []
+        self.local_files_within_home = []
 
     def net_home_to_loc_home(self, net_home):
         try:
@@ -43,7 +65,24 @@ class FileManager:
         self.net_homes[p.parts[-1]] = p
 
     def update_within_net_home(self, home, comm):
-        pass
+        self.within_net_home = comm.get_files_within_home(home)
+
+    def update_local_files_within_home(self, home):
+
+    def read_home_index(self, home_index):
+        out = []
+        with open(home_index, "r") as f:
+            while True:
+                line = f.readline().rstrip("\n")
+                if line == "":
+                    break
+
+                out.append()
+
+    def write_within_net_home_to_home_index(self, home):
+        home_index = home_to_home_index(str(home))
+        with open(index_temp_file, "w+") as f:
+
 
 
 file_manager = FileManager()
@@ -99,11 +138,21 @@ class Communicator:
         self.sock.connect((host, port))
 
     def get_files_within_home(self, home):
+        print("sent")
         self.sock.sendall(f"REQ_FILES_IN_HOME:{str(home)}".encode("ASCII"))
         chunk_recved = self.sock.recv(2**28).decode("ASCII")
+
+        if chunk_recved == "RESP_HOME_EMPTY":
+            print("HOME EMPTY")
+            return []
+
         out = []
         for n in chunk_recved.split("\n"):
+            if n == "":
+                break
+            print(n)
             ns = n.split("///")
+            print(ns)
             out.append(netfile_from_net_path(ns[0], int(ns[1])))
         return out
 
@@ -125,7 +174,6 @@ class Communicator:
 
         made_hash = send_file(self.sock, locfile.local_path, CHUNK_SIZE, num_of_chunks)
         on_request(self.sock, "REQ_HASH", made_hash, to_send_is_bytes=True)
-
 
     def get_file(self, netfile):
         """
@@ -215,7 +263,11 @@ class Communicator:
         locfile = net_to_locfile(netfile)
         if os.path.exists(locfile.local_path):
             os.rename(locfile.local_path, to_delete_file)
+
+        ensure_folder_exists(locfile.path, locfile.home)
+
         os.rename(temp_file, locfile.local_path)
+
         if os.path.exists(to_delete_file):
             os.remove(to_delete_file)
         return True
@@ -224,7 +276,7 @@ class Communicator:
 def netfile_from_net_path(net_path, ver):
     p = Path(net_path)
     if len(p.parts) > 1:
-        return NetFile(p.parent, Path(p.parts[0]), ver)
+        return NetFile(p.stem, Path(p.parts[0]), ver)
     return NetFile(Path(net_path), Path(""), ver)
 
 
@@ -233,7 +285,15 @@ def net_to_locfile(netfile):
 
 
 def loc_to_netfile(locfile):
-    return NetFile(locfile.path, locfile.path_home.parts[-1], locfile.ver)
+    return NetFile(locfile.path, locfile.home.parts[-1], locfile.ver)
+
+
+def ensure_folder_exists(path: Path, home: Path):
+    if path.exists() or path.parent == Path("") or path.parent == Path(home):
+        return True
+    ensure_folder_exists(path.parent, home)
+    path.mkdir()
+    return False
 
 
 def send_file(sock, filepath, chunk_size, num_of_chunks):
@@ -269,5 +329,6 @@ class ServerPath:
 if __name__ == "__main__":
     c = Communicator()
     file_manager.add_dir("clientdir")
-    print(c.add_or_update_file(LocalFile("not_temp_file.file", "clientdir", 0)))
+    file_manager.update_within_net_home("clientdir", c)
+    print(file_manager.within_net_home)
     print()

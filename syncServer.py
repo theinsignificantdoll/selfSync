@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 temp_file = Path("temp_server.file")
-to_delete_file = Path("todelete.file")
+to_delete_file = Path("todeleteserve.file")
 index_file = Path("index.file")
 if not os.path.exists(index_file):
     with open(index_file, "w+") as f:
@@ -19,7 +19,10 @@ serverstor = Path("serverstor")
 def localfile_from_local_path(local_path, ver):
     p = Path(local_path)
     if len(p.parts) > 1:
-        return LocalFile(p.parent, Path(p.parts[0]), ver)
+        print("h")
+        print(p.stem, Path(p.parts[0]), ver)
+        return LocalFile(p.stem, Path(p.parts[0]), ver)
+    print("a")
     return LocalFile(Path(local_path), Path(""), ver)
 
 
@@ -95,7 +98,7 @@ class RequestHandler:
         if request.split(b":")[0] == b"recv_file":
             print(self.file_request_handler(request.decode("ASCII").split(":")[1]))
         elif request.split(b":")[0] == b"REQ_FILES_IN_HOME":
-            print(self.files_in_home_handler(Path(str(request.split(b":")[1]))))
+            print(self.files_in_home_handler(Path(request.decode("ASCII").split(":")[1])))
         elif request.split(b":")[0] == b"REQ_FILE_VER":
             print(self.file_ver_handler(Path(str(request.split(b":")[1]))))
         elif request.split(b":")[0] == b"REQ_ADD_FILE":
@@ -120,7 +123,6 @@ class RequestHandler:
 
     def recv_file(self, locfile, chunk_size, num_of_chunks):
         hasher = hashlib.sha256()
-        print(locfile, chunk_size, num_of_chunks)
         with open(temp_file, "bw+") as f:
             for n in range(num_of_chunks):
                 self.sock.sendall(f"REQ_CHUNK_{n}".encode("ASCII"))
@@ -130,12 +132,13 @@ class RequestHandler:
 
                 hasher.update(chunk)
                 f.write(chunk)
-        print("temp written")
         return hasher.digest()
 
     def activatefile(self, locfile):
         if (serverstor / locfile.local_path).exists():
             os.rename(serverstor / locfile.local_path, to_delete_file)
+
+        ensure_folder_exists(serverstor / locfile.local_path.parent)
         os.rename(temp_file, serverstor / locfile.local_path)
         file_manager.add_or_update_local_file(locfile)
         os.remove(to_delete_file)
@@ -148,7 +151,11 @@ class RequestHandler:
     def files_in_home_handler(self, home):
         files_in_home = file_manager.files_in_home(home)
         chunk_to_send = ""
+        if not files_in_home:
+            self.sock.sendall(b"RESP_HOME_EMPTY")
+            return
         for n in files_in_home:
+            print(n.path, n.home, n.ver, n.local_path)
             chunk_to_send += f"{n.local_path}///{n.ver}\n"
         self.sock.sendall(chunk_to_send.encode("ASCII"))
 
@@ -173,6 +180,14 @@ class RequestHandler:
         return send_hash(self.sock, local_file_hash)
 
 
+def ensure_folder_exists(path: Path):
+    if path.exists() or path.parent == Path(""):
+        return True
+    ensure_folder_exists(path.parent)
+    path.mkdir()
+    return False
+
+
 def send_hash(sock, local_file_hash):
     request = sock.recv(1024)
     print("requesting hash?")
@@ -188,9 +203,7 @@ def send_file(sock, filepath, chunk_size, num_of_chunks):
     hasher = hashlib.sha256()
     with open(filepath, "br") as f:
         for n in range(num_of_chunks):
-            print("r")
             request = sock.recv(1024)
-            print("rd")
             if b"REQ_CHUNK_" not in request:
                 sock.sendall(b"FAIL")
                 return False
