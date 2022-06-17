@@ -30,18 +30,33 @@ class FileManager:
 file_manager = FileManager()
 
 
+def single_file_to_home_file(single_file):
+    return Path(str(Path(single_file).parts[-1]) + ".home")
+
+
 class Manager:
     def __init__(self, comm, search_dir=None, single_file=None):
         self.comm = comm
+        self.search_dir = Path(search_dir)
+        self.local_files = []
         if search_dir is None and single_file is None:
             raise Exception("Lacking search_dir or single_file (Both are == None)")
+
         if single_file is not None:
             self.do_single_file(single_file)
-
             return
-        self.search_dir = search_dir
+
+        self.get_local_files()
 
     def do_single_file(self, single_file):
+        locfile = LocalFile(single_file, "", 0)
+        single_file_home = single_file_to_home_file(single_file)
+        with open(single_file_home, "r") as f:
+            locfile.ver = int(f.readline().rstrip("\n"))
+
+        # mnbmnbmnb
+
+    def get_local_files(self):
         pass
 
 
@@ -54,6 +69,9 @@ class Communicator:
 
     def get_files_within_home(self, home):
         self.sock.sendall(f"REQ_FILES_IN_HOME:{home}".encode("ASCII"))
+
+    def get_file_ver(self, netfile):
+        self.sock.sendall(f"REQ_FILE_VER:{netfile.net_path}".encode("ASCII"))
 
     def get_file(self, netfile):
         """

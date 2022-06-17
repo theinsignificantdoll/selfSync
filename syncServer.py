@@ -6,11 +6,48 @@ from pathlib import Path
 
 
 serverstor = Path("serverstor")
+if not serverstor.exists():
+    with open(serverstor, "w+") as f:
+        pass
+
+
+def localfile_from_local_path(local_path, ver):
+    p = Path(local_path)
+    if len(p.parts) > 1:
+        return LocalFile(p.parent, Path(p.parts[0]), ver)
+    return LocalFile(Path(local_path), Path(""), ver)
+
+
+class LocalFile:
+    def __init__(self, path, home, ver):
+        self.path = Path(path)
+        self.home = Path(home)
+        self.ver = ver
+        self.local_path = home / path
 
 
 class FileManager:
     def __init__(self, serverstor=serverstor):
         self.serverstor = serverstor
+        self.stored_files = {}   # KEY should be equal to LocalFile.local_path
+
+    def read_stor(self):
+        with open(self.serverstor, "r") as f:
+            while True:
+                r = f.readline().rstrip("\n")
+                if r == "":
+                    break
+                p = r.split("///")
+                local_path = p[0]
+                ver = int(p[1])
+                l = localfile_from_local_path(local_path, ver)
+
+                self.stored_files[l.local_path] = l
+
+    def write_stor(self):
+        with open(self.serverstor, "w+") as f:
+            for d in self.stored_files:
+                f.write(f"{d}///{self.stored_files[d].ver}\n")
 
 
 class RequestHandler:
