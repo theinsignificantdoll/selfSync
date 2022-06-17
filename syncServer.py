@@ -36,6 +36,11 @@ class FileManager:
         self.serverstor = serverstor
         self.stored_files = {}   # KEY should be equal to LocalFile.local_path
 
+    def __str__(self):
+        out = ""
+        for n in self.stored_files:
+            out += f"{}"
+
     def read_stor(self):
         with open(index_file, "r") as f:
             while True:
@@ -61,8 +66,14 @@ class FileManager:
                 out.append(self.stored_files[d])
         return out
 
-    def add_or_update_local_file(self, locfile: LocalFile):
+    def add_or_update_local_file(self, locfile: LocalFile, append_to_index=True):
         self.stored_files[locfile.local_path] = locfile
+        if append_to_index:
+            self.append_to_index(locfile)
+
+    def append_to_index(self, locfile: LocalFile):
+        with open(index_file, "a") as f:
+            f.write(f"{locfile.local_path}///{locfile.ver}\n")
 
     def get_ver(self, net_path):
         return self.stored_files[Path(net_path)].ver
@@ -125,7 +136,6 @@ class RequestHandler:
     def activatefile(self, locfile):
         if (serverstor / locfile.local_path).exists():
             os.rename(serverstor / locfile.local_path, to_delete_file)
-        print(serverstor / locfile.local_path, os.path.isfile(temp_file))
         os.rename(temp_file, serverstor / locfile.local_path)
         file_manager.add_or_update_local_file(locfile)
         os.remove(to_delete_file)
