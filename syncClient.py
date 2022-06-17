@@ -7,9 +7,10 @@ from pathlib import Path
 CHUNK_SIZE = 2**16
 
 
-temp_file = "temp.file"
-index_temp_file = "temp_index.file"
-to_delete_file = "todelete.file"
+temp_file = Path("temp.file")
+index_temp_file = Path("temp_index.file")
+index_to_delete_file = Path("delete_index.file")
+to_delete_file = Path("todelete.file")
 index_extension = ".index"
 
 
@@ -21,6 +22,15 @@ def home_index_to_home(home_index: str):
     return home_index.rstrip(index_extension)
 
 
+def get_all_files_in(path: Path):
+    out = []
+    for n in path.iterdir():
+        if n.is_dir():
+            out += [*get_all_files_in(n)]
+        out.append(Path(n))
+    return out
+
+
 class LocalFile:
     def __init__(self, path, home, ver, timestamp=None):
         self.path = Path(path)
@@ -30,11 +40,14 @@ class LocalFile:
 
         if timestamp is None:
             if not os.path.exists(self.local_path):
-                timestamp = 0
+                self.timestamp = 0
             else:
-                self.timestamp = os.path.getmtime(self.local_path)
+                self.timestamp = int(os.path.getmtime(self.local_path))
         else:
             self.timestamp = timestamp
+
+    def __repr__(self):
+        return f"LocalFile({self.path}, {self.home}, {self.ver})"
 
 
 class NetFile:
@@ -52,11 +65,12 @@ class FileManager:
     def __init__(self):
         self.net_homes = {}  # USES Path OBJECTS
         self.within_net_home = []
-        self.local_files_within_home = []
+        self.local_files_within_home_index = {}  # {Path(Local_Path): LocalFile}
+        self.local_files_not_in_home_index = []
 
     def net_home_to_loc_home(self, net_home):
         try:
-            return self.net_homes[net_home]
+            return self.net_homes[str(net_home)]
         except KeyError:
             return ""
 
@@ -67,22 +81,64 @@ class FileManager:
     def update_within_net_home(self, home, comm):
         self.within_net_home = comm.get_files_within_home(home)
 
-    def update_local_files_within_home(self, home):
+    def update_local_files_within_home_index(self, home):
+        self.local_files_within_home_index = self.read_home_index(home_to_home_index(home))
+
+    def update_local_files_not_in_home_index(self, home):
+        path_to_home = Path(self.net_home_to_loc_home(home))
+        all_files = get_all_files_in(path_to_home)
+        self.local_files_not_in_home_index = []
+        for n in all_files:
+            if str(n) not in self.local_files_within_home_index:
+                self.local_files_not_in_home_index.append(local_file_from_local_path(n, 0))
 
     def read_home_index(self, home_index):
-        out = []
+        out = {}
+        if not Path(home_index).exists():
+            with open(home_index, "w+") as f:
+                return {}
         with open(home_index, "r") as f:
             while True:
                 line = f.readline().rstrip("\n")
                 if line == "":
                     break
 
-                out.append()
+                splitline = line.split("///")
+                out[splitline[0]] = (local_file_from_local_path(splitline[0], int(splitline[1]), int(splitline[2])))
+        return out
 
-    def write_within_net_home_to_home_index(self, home):
-        home_index = home_to_home_index(str(home))
+    def write_local_files_to_home_index(self, home):
+        home_index = Path(home_to_home_index(str(home)))
         with open(index_temp_file, "w+") as f:
+            for n in self.local_files_within_home_index:
+                locfile = self.local_files_within_home_index[n]
+                f.write(f"{locfile.local_path}///{locfile.ver}///{locfile.timestamp}\n")
 
+        if home_index.exists():
+            os.rename(home_index, index_to_delete_file)
+
+        os.rename(index_temp_file, home_index)
+
+        if index_to_delete_file.exists():
+            os.remove(index_to_delete_file)
+
+    def add_file_to_home_index(self, locfile):
+        self.local_files_within_home_index[str(locfile.local_path)] = locfile
+
+    def write_single_file(self, locfile):
+        with open(single_file_to_home_file(locfile.local_path), "w+") as f:
+            f.write(f"{locfile.local_path}\n")
+            f.write(f"{locfile.ver}\n")
+            f.write(f"{locfile.timestamp}\n")
+
+    def get_single_file(self, single_file):
+        if not Path(single_file_to_home_file(single_file)).exists():
+            self.write_single_file(local_file_from_local_path(single_file, 0))
+        with open(single_file_to_home_file(single_file)) as f:
+            local_path = f.readline().rstrip("\n")
+            ver = int(f.readline().rstrip("\n"))
+            timestamp = int(f.readline().rstrip("\n"))
+            return local_file_from_local_path(local_path, ver, timestamp)
 
 
 file_manager = FileManager()
@@ -94,7 +150,6 @@ def single_file_to_home_file(single_file):
 
 def on_request(sock: socket, req, to_send: str, to_send_is_bytes=False):
     request = sock.recv(1024).decode("ASCII")
-    print(to_send)
     if request == req:
         if to_send_is_bytes:
             sock.sendall(to_send)
@@ -107,7 +162,6 @@ def on_request(sock: socket, req, to_send: str, to_send_is_bytes=False):
 class Manager:
     def __init__(self, comm, search_dir=None, single_file=None):
         self.comm = comm
-        self.search_dir = Path(search_dir)
         self.local_files = []
         if search_dir is None and single_file is None:
             raise Exception("Lacking search_dir or single_file (Both are == None)")
@@ -115,30 +169,58 @@ class Manager:
         if single_file is not None:
             self.do_single_file(single_file)
             return
-
-        self.get_local_files()
+        self.search_dir = Path(search_dir)
+        self.download_missing_files()
+        self.download_outdated()
+        self.upload_missing_files()
+        file_manager.write_local_files_to_home_index(search_dir)
 
     def do_single_file(self, single_file):
-        locfile = LocalFile(single_file, "", 0)
-        single_file_home = single_file_to_home_file(single_file)
-        with open(single_file_home, "r") as f:
-            locfile.ver = int(f.readline().rstrip("\n"))
+        locfile = file_manager.get_single_file(single_file)
+        netfile = self.comm.get_files_within_home(locfile.home.parts[-1])
+        for n in netfile:
+            if n.path == locfile.path:
+                if n.ver > locfile.ver:
+                    self.comm.get_file(n, locfile.home)
+                    locfile.ver = n.ver
+                    file_manager.write_single_file(locfile)
+                return
 
-        # mnbmnbmnb
+        self.comm.add_or_update_file(locfile)
 
-    def get_local_files(self):
-        pass
+    def download_missing_files(self):
+        file_manager.update_within_net_home(self.search_dir, self.comm)
+        file_manager.update_local_files_within_home_index(self.search_dir)
+        file_manager.update_local_files_not_in_home_index(self.search_dir)
+        for n in file_manager.within_net_home:
+            locfile = net_to_locfile(n)
+            if str(locfile.local_path) not in file_manager.local_files_within_home_index:
+                self.comm.get_file(n)
+                file_manager.add_file_to_home_index(locfile)
+
+    def download_outdated(self):
+        for n in file_manager.within_net_home:
+            locfile = net_to_locfile(n)
+            if n.ver > file_manager.local_files_within_home_index[str(locfile.local_path)].ver:
+                self.comm.get_file(n)
+                locfile = net_to_locfile(n)  # Update to include timestamp
+                file_manager.add_file_to_home_index(locfile)
+
+    def upload_missing_files(self):
+        for n in file_manager.local_files_not_in_home_index:
+            print("ADDING:", n)
+            self.comm.add_or_update_file(n)
+            file_manager.add_file_to_home_index(n)
 
 
 class Communicator:
-    def __init__(self, port=59595, host="127.0.0.1"):
+    def __init__(self, port=59695, host="127.0.0.1"):
         self.host = host
         self.port = port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((host, port))
 
     def get_files_within_home(self, home):
-        print("sent")
         self.sock.sendall(f"REQ_FILES_IN_HOME:{str(home)}".encode("ASCII"))
         chunk_recved = self.sock.recv(2**28).decode("ASCII")
 
@@ -150,9 +232,7 @@ class Communicator:
         for n in chunk_recved.split("\n"):
             if n == "":
                 break
-            print(n)
             ns = n.split("///")
-            print(ns)
             out.append(netfile_from_net_path(ns[0], int(ns[1])))
         return out
 
@@ -175,19 +255,21 @@ class Communicator:
         made_hash = send_file(self.sock, locfile.local_path, CHUNK_SIZE, num_of_chunks)
         on_request(self.sock, "REQ_HASH", made_hash, to_send_is_bytes=True)
 
-    def get_file(self, netfile):
+    def get_file(self, netfile, optional_placement=None):
         """
         gets file from server
 
         :param netfile:
+        :param optional_placement:
         :return True if success, otherwise False:
         """
+        print("Fetching:", netfile)
         recved_file_hash = self.recv_file(netfile)
         if recved_file_hash is False:
             return False
         if not self.check_file_integrity(recved_file_hash):
             return False
-        self.activate_file(netfile)
+        self.activate_file(netfile, optional_placement)
 
     def recv_file(self, netfile):
         """
@@ -197,36 +279,26 @@ class Communicator:
         :return: True if success otherwise False
         """
         self.sock.sendall(f"recv_file:{netfile.net_path}".encode("ASCII"))
-        print("recving")
         response = self.sock.recv(1024)
-        print("recved")
         if not response == b"Affirmative":
             return False
         try:
             self.sock.sendall(b"REQ_NUM_OF_CHUNKS")
-            print("r")
             response = self.sock.recv(1024)
-            print("rd")
             num_of_chunks = int(response)
 
             self.sock.sendall(b"REQ_CHUNK_SIZE")
-            print("r")
             response = self.sock.recv(1024)
-            print("rd")
             chunk_size = int(response)
         except TypeError:
             return False
 
         hasher = hashlib.sha256()
         with open(temp_file, "bw+") as f:
-            print(num_of_chunks)
             for n in range(num_of_chunks):
                 self.sock.sendall(f"REQ_CHUNK_{n}".encode("ASCII"))
-                print("rr")
                 response = self.sock.recv(chunk_size+1024)
-                print("rrdd")
                 if response == b"FAIL":
-                    print(response)
                     return False
 
                 f.write(response)
@@ -250,34 +322,57 @@ class Communicator:
         server_hash = self.sock.recv(1024)
         if temp_file_hash == server_hash:
             return True
-        print(server_hash)
         print("Non-matching hash")
         return False
 
-    def activate_file(self, netfile):
+    def activate_file(self, netfile, optional_placement=None):
         """
         activates temp.file. I.e. moves it, and registers it
 
         :return: True if success otherwise False
         """
         locfile = net_to_locfile(netfile)
-        if os.path.exists(locfile.local_path):
-            os.rename(locfile.local_path, to_delete_file)
+        end_path = locfile.local_path
+        if optional_placement is not None:
+            end_path = optional_placement / locfile.path
 
-        ensure_folder_exists(locfile.path, locfile.home)
+        if os.path.exists(end_path):
+            os.rename(end_path, to_delete_file)
 
-        os.rename(temp_file, locfile.local_path)
+        if optional_placement is None:
+            ensure_folder_exists(locfile.path, locfile.home)
+        else:
+            ensure_folder_exists(end_path, Path(optional_placement))
+
+        os.rename(temp_file, end_path)
 
         if os.path.exists(to_delete_file):
             os.remove(to_delete_file)
         return True
 
+    def trigger_server_index_save(self):
+        self.sock.sendall(b"REQ_SERVER_SAVE")
+
+
+def get_path_from_full(full_path):
+    parts = Path(full_path).parts
+    if len(parts) == 1:
+        return full_path
+    return Path("/".join(parts[1:]))
+
 
 def netfile_from_net_path(net_path, ver):
     p = Path(net_path)
     if len(p.parts) > 1:
-        return NetFile(p.stem, Path(p.parts[0]), ver)
+        return NetFile(get_path_from_full(p), Path(p.parts[0]), ver)
     return NetFile(Path(net_path), Path(""), ver)
+
+
+def local_file_from_local_path(local_path, ver, timestamp=None):
+    p = Path(local_path)
+    if len(p.parts) > 1:
+        return LocalFile(get_path_from_full(p), Path(p.parts[0]), ver, timestamp)
+    return LocalFile(Path(local_path), Path(""), ver, timestamp)
 
 
 def net_to_locfile(netfile):
@@ -285,6 +380,8 @@ def net_to_locfile(netfile):
 
 
 def loc_to_netfile(locfile):
+    if locfile.home == Path(""):
+        return NetFile(locfile.path, "", locfile.ver)
     return NetFile(locfile.path, locfile.home.parts[-1], locfile.ver)
 
 
@@ -300,9 +397,7 @@ def send_file(sock, filepath, chunk_size, num_of_chunks):
     hasher = hashlib.sha256()
     with open(filepath, "br") as f:
         for n in range(num_of_chunks):
-            print("r")
             request = sock.recv(1024)
-            print("rd")
             if b"REQ_CHUNK_" not in request:
                 sock.sendall(b"FAIL")
                 return False
@@ -326,9 +421,13 @@ class ServerPath:
         return self.path
 
 
-if __name__ == "__main__":
+def do_dir(direc):
     c = Communicator()
-    file_manager.add_dir("clientdir")
-    file_manager.update_within_net_home("clientdir", c)
-    print(file_manager.within_net_home)
-    print()
+    file_manager.add_dir(direc)
+    Manager(c, direc)
+    c.trigger_server_index_save()
+
+
+if __name__ == "__main__":
+    do_dir("clientdir")
+

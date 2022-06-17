@@ -19,11 +19,15 @@ serverstor = Path("serverstor")
 def localfile_from_local_path(local_path, ver):
     p = Path(local_path)
     if len(p.parts) > 1:
-        print("h")
-        print(p.stem, Path(p.parts[0]), ver)
-        return LocalFile(p.stem, Path(p.parts[0]), ver)
-    print("a")
+        return LocalFile(get_path_from_full(p), Path(p.parts[0]), ver)
     return LocalFile(Path(local_path), Path(""), ver)
+
+
+def get_path_from_full(full_path):
+    parts = Path(full_path).parts
+    if len(parts) == 1:
+        return full_path
+    return Path("/".join(parts[1:]))
 
 
 class LocalFile:
@@ -103,6 +107,8 @@ class RequestHandler:
             print(self.file_ver_handler(Path(str(request.split(b":")[1]))))
         elif request.split(b":")[0] == b"REQ_ADD_FILE":
             print(self.file_add_handler(), "File_add_handler")
+        elif request == b"REQ_SERVER_SAVE":
+            file_manager.write_stor()
 
     def file_add_handler(self):
         home = make_request(self.sock, "REQ_HOME").decode("ASCII")
@@ -222,12 +228,15 @@ def send_file(sock, filepath, chunk_size, num_of_chunks):
 if __name__ == "__main__":
     file_manager = FileManager()
     file_manager.read_stor()
+    print("Loaded Index")
 
     globsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     globsock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    globsock.bind(("0.0.0.0", 59595))
+    globsock.bind(("0.0.0.0", 59695))
     globsock.listen(1)
+    print("Listening")
     handle, address = globsock.accept()
+    print(address, "Connected")
 
     h = RequestHandler(handle)
     while True:
