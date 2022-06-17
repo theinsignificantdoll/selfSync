@@ -39,7 +39,7 @@ class FileManager:
     def __str__(self):
         out = ""
         for n in self.stored_files:
-            out += f"{}"
+            out += f"{n.local_path} {n.ver}\n"
 
     def read_stor(self):
         with open(index_file, "r") as f:
