@@ -55,6 +55,7 @@ def single_file_to_home_file(single_file):
 
 def on_request(sock: socket, req, to_send: str, to_send_is_bytes=False):
     request = sock.recv(1024).decode("ASCII")
+    print(to_send)
     if request == req:
         if to_send_is_bytes:
             sock.sendall(to_send)
@@ -98,7 +99,7 @@ class Communicator:
         self.sock.connect((host, port))
 
     def get_files_within_home(self, home):
-        self.sock.sendall(f"REQ_FILES_IN_HOME:{home}".encode("ASCII"))
+        self.sock.sendall(f"REQ_FILES_IN_HOME:{str(home)}".encode("ASCII"))
         chunk_recved = self.sock.recv(2**28).decode("ASCII")
         out = []
         for n in chunk_recved.split("\n"):
@@ -268,5 +269,5 @@ class ServerPath:
 if __name__ == "__main__":
     c = Communicator()
     file_manager.add_dir("clientdir")
-    print(c.get_file(NetFile("not_temp_file.file", "clientdir", 0)))
-    print(c.get_file(NetFile("more_not_file.file", "clientdir", 0)))
+    print(c.add_or_update_file(LocalFile("not_temp_file.file", "clientdir", 0)))
+    print()

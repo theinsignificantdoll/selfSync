@@ -7,12 +7,13 @@ from pathlib import Path
 
 temp_file = Path("temp_server.file")
 to_delete_file = Path("todelete.file")
+index_file = Path("index.file")
+if not os.path.exists(index_file):
+    with open(index_file, "w+") as f:
+        pass
 
 
 serverstor = Path("serverstor")
-if not serverstor.exists():
-    with open(serverstor, "w+") as f:
-        pass
 
 
 def localfile_from_local_path(local_path, ver):
@@ -27,7 +28,7 @@ class LocalFile:
         self.path = Path(path)
         self.home = Path(home)
         self.ver = ver
-        self.local_path = home / path
+        self.local_path = self.home / self.path
 
 
 class FileManager:
@@ -36,7 +37,7 @@ class FileManager:
         self.stored_files = {}   # KEY should be equal to LocalFile.local_path
 
     def read_stor(self):
-        with open(self.serverstor, "r") as f:
+        with open(index_file, "r") as f:
             while True:
                 r = f.readline().rstrip("\n")
                 if r == "":
@@ -49,7 +50,7 @@ class FileManager:
                 self.stored_files[l.local_path] = l
 
     def write_stor(self):
-        with open(self.serverstor, "w+") as f:
+        with open(index_file, "w+") as f:
             for d in self.stored_files:
                 f.write(f"{d}///{self.stored_files[d].ver}\n")
 
@@ -69,7 +70,7 @@ class FileManager:
 
 def make_request(sock: socket, req: str):
     sock.sendall(req.encode("ASCII"))
-    response = sock.recv(1024).decode("ASCII")
+    response = sock.recv(1024)
     return response
 
 
@@ -87,11 +88,11 @@ class RequestHandler:
         elif request.split(b":")[0] == b"REQ_FILE_VER":
             print(self.file_ver_handler(Path(str(request.split(b":")[1]))))
         elif request.split(b":")[0] == b"REQ_ADD_FILE":
-            print(self.file_add_handler())
+            print(self.file_add_handler(), "File_add_handler")
 
     def file_add_handler(self):
-        home = make_request(self.sock, "REQ_HOME")
-        path = make_request(self.sock, "REQ_PATH")
+        home = make_request(self.sock, "REQ_HOME").decode("ASCII")
+        path = make_request(self.sock, "REQ_PATH").decode("ASCII")
         ver = int(make_request(self.sock, "REQ_VER"))
         chunk_size = int(make_request(self.sock, "REQ_CHUNK_SIZE"))
         num_of_chunks = int(make_request(self.sock, "REQ_NUM_OF_CHUNKS"))
@@ -108,6 +109,7 @@ class RequestHandler:
 
     def recv_file(self, locfile, chunk_size, num_of_chunks):
         hasher = hashlib.sha256()
+        print(locfile, chunk_size, num_of_chunks)
         with open(temp_file, "bw+") as f:
             for n in range(num_of_chunks):
                 self.sock.sendall(f"REQ_CHUNK_{n}".encode("ASCII"))
@@ -117,12 +119,14 @@ class RequestHandler:
 
                 hasher.update(chunk)
                 f.write(chunk)
+        print("temp written")
         return hasher.digest()
 
     def activatefile(self, locfile):
-        if locfile.local_path.exists():
-            os.rename(locfile.local_path, to_delete_file)
-        os.rename(temp_file, locfile.local_path)
+        if (serverstor / locfile.local_path).exists():
+            os.rename(serverstor / locfile.local_path, to_delete_file)
+        print(serverstor / locfile.local_path, os.path.isfile(temp_file))
+        os.rename(temp_file, serverstor / locfile.local_path)
         file_manager.add_or_update_local_file(locfile)
         os.remove(to_delete_file)
         return True
