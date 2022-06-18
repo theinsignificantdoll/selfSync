@@ -186,7 +186,7 @@ class RequestHandler:
         self.sock.sendall(chunk_to_send.encode("ASCII"))
 
     def file_request_handler(self, netfile):
-        filepath = netfile
+        filepath = Path(netfile)
         full_file_path = serverstor / filepath
 
         file_size = os.path.getsize(full_file_path)
