@@ -129,6 +129,7 @@ class RequestHandler:
 
     def loop(self):
         request = read_req(self.sock)
+        self.sock.settimeout(32)
         if request == b"":
             return False
         if request.split(b":")[0] == b"recv_file":
@@ -293,6 +294,7 @@ def loop_socklist():
         time.sleep(0.01)
         for ind, s in enumerate(soclist):
             try:
+                s.sock.settimeout(0.2)
                 s_connected = s.loop()
                 if not s_connected:
                     to_delete.append(ind)
@@ -323,7 +325,6 @@ if __name__ == "__main__":
     while not has_exited:
         handle, address = globsock.accept()
         print(address, "Connected")
-        handle.settimeout(0.01)
 
         h = RequestHandler(handle)
         soclist.append(h)
