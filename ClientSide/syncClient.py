@@ -6,6 +6,7 @@ from pathlib import Path
 
 CHUNK_SIZE = 2**16
 
+
 host = "127.0.0.1"
 port = 3434
 
