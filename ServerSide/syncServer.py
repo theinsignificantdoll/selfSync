@@ -260,7 +260,7 @@ def loop_socklist():
             print(s, soclist, to_delete)
         for s in to_delete:
             print(s, soclist, to_delete)
-            soclist.remove(s)
+            #soclist.remove(s)
         to_delete.clear()
 
 
