@@ -7,7 +7,9 @@ import sys
 
 
 notifications = True
+print(sys.argv)
 if "--no_notifications" in sys.argv:
+    print("NOTIFICATIONS: OFF")
     notifications = False
 
 
