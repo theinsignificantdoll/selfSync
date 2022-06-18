@@ -142,6 +142,7 @@ class RequestHandler:
             self.file_add_handler(), "File_add_handler"
         elif request == b"REQ_SERVER_SAVE":
             file_manager.write_stor()
+        self.sock.settimeout(0.2)
         return True
 
     def file_add_handler(self):
@@ -301,7 +302,7 @@ def loop_socklist():
 
             except (socket.timeout, ConnectionResetError) as e:
                 if e != socket.timeout:
-                    print(e)
+                    print(e, [e])
                 continue
         to_delete.reverse()
         for s in to_delete:
