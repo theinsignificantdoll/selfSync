@@ -268,7 +268,7 @@ class Communicator:
 
         self.sock.sendall(b"REQ_ADD_FILE")
         on_request(self.sock, "REQ_HOME", str(netfile.home.parts[-1]))
-        on_request(self.sock, "REQ_PATH", str(netfile.path))
+        on_request(self.sock, "REQ_PATH", str(netfile.path.as_posix()))
         on_request(self.sock, "REQ_VER", str(netfile.ver))
         on_request(self.sock, "REQ_CHUNK_SIZE", str(CHUNK_SIZE))
         on_request(self.sock, "REQ_NUM_OF_CHUNKS", str(num_of_chunks))
