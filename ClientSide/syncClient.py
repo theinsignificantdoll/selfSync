@@ -274,6 +274,7 @@ class Communicator:
         on_request(self.sock, "REQ_NUM_OF_CHUNKS", str(num_of_chunks))
 
         made_hash = send_file(self.sock, locfile.local_path, CHUNK_SIZE, num_of_chunks)
+        locfile.ver += 1
         on_request(self.sock, "REQ_HASH", made_hash, to_send_is_bytes=True)
         self.when_upload_callback(locfile.local_path)
 
