@@ -22,6 +22,7 @@ def read_req(sock):
     req = b""
     while len(req) > 0 and req[-1] != b"\n":
         req += sock.recv(1024)
+        print(req)
     return req.rstrip(b"\n")
 
 
