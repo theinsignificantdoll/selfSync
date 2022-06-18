@@ -258,6 +258,7 @@ def loop_socklist():
             except socket.timeout:
                 continue
         for s in to_delete:
+            print(s, soclist, to_delete)
             soclist.remove(s)
         to_delete.clear()
 
