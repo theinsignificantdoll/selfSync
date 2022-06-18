@@ -19,7 +19,7 @@ index_extension = ".index"
 
 def read_req(sock):
     req = b""
-    while req[-1] != b"\n":
+    while len(req) > 0 and req[-1] != b"\n":
         req += sock.recv(1024)
     return req.rstrip(b"\n")
 
