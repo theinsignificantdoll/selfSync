@@ -1,10 +1,12 @@
 ###################################################################
--Add "run" scripts
+-Fix bug that makes it stuck
 
 
 
 
 
+
+X-Add "run" scripts
 X-Add a graphical user interface
 X-Add a layer that can keep track of multiple files/directories
 X-Add callback functions for when;

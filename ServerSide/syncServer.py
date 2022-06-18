@@ -7,6 +7,10 @@ from pathlib import Path
 import threading
 
 
+host = "127.0.0.1"
+port = 3434
+
+
 soclist = []
 
 has_exited = False
@@ -258,7 +262,7 @@ if __name__ == "__main__":
 
     globsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     globsock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    globsock.bind(("0.0.0.0", 59695))
+    globsock.bind((host, port))
     globsock.listen(1)
     print("Listening")
     loop_thread = threading.Thread(None, loop_socklist)

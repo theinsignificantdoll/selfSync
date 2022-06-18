@@ -20,10 +20,13 @@ print(file_handler.saved)
 for n in file_handler.saved:
     print("H")
     if Path(n).is_dir():
+        print("isdir", n)
         do_dir(Path(n), when_upload_callback=notify_upload, when_download_callback=notify_download)
-    elif Path(n).is_file():
+        print("did dir")
+    elif Path(n).is_file() or Path(n).suffix != "":
+        print("isfile", n)
         do_single_file(Path(n), when_upload_callback=notify_upload, when_download_callback=notify_download)
-    print(Path(n).suffix)
+    print([Path(n).suffix], "suf")
 
 
 

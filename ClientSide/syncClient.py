@@ -6,6 +6,9 @@ from pathlib import Path
 
 CHUNK_SIZE = 2**16
 
+host = "127.0.0.1"
+port = 3434
+
 
 temp_file = Path("temp.file")
 index_temp_file = Path("temp_index.file")
@@ -228,7 +231,7 @@ class Manager:
 
 
 class Communicator:
-    def __init__(self, port=59695, host="127.0.0.1", when_upload_callback=_pass, when_download_callback=_pass):
+    def __init__(self, port=port, host=host, when_upload_callback=_pass, when_download_callback=_pass):
         self.host = host
         self.port = port
         self.when_upload_callback = when_upload_callback
