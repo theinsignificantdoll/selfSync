@@ -254,7 +254,7 @@ class Communicator:
     def massive_chunk(self, chunk_size):
         req = b""
         print("massive chunk")
-        while len(req) == 0 or req[-2:] != b"\n\n":
+        while len(req) <= 1 or req[-2:] != b"\n\n":
             req += self.sock.recv(chunk_size)
         print("massive chink out")
         return req.rstrip(b"\n")
