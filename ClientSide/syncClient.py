@@ -332,6 +332,7 @@ class Communicator:
             return False
         try:
             self.sock.sendall(b"REQ_NUM_OF_CHUNKS\n")
+            print("REQ NU O FCHUNKS")
             response = read_req(self.sock)
             num_of_chunks = int(response)
 
