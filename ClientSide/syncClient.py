@@ -21,8 +21,10 @@ index_extension = ".index"
 def read_req(sock):
     req = b""
     while len(req) == 0 or req[-1] != b"\n":
+        print("recvmomg`")
         req += sock.recv(1024)
         print(req)
+    print(req)
     return req.rstrip(b"\n")
 
 
@@ -251,8 +253,10 @@ class Communicator:
 
     def massive_chunk(self, chunk_size):
         req = b""
-        while req[-2:] != b"\n\n":
+        print("massive chunk")
+        while len(req) == 0 or req[-2:] != b"\n\n":
             req += self.sock.recv(chunk_size)
+        print("massive chink out")
         return req.rstrip(b"\n")
 
     def get_files_within_home(self, home):

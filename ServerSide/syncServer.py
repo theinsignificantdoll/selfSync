@@ -191,7 +191,7 @@ class RequestHandler:
             return
         for n in files_in_home:
             chunk_to_send += f"{n.local_path}///{n.ver}\n"
-        self.sock.sendall(f"{chunk_to_send}\n".encode("ASCII"))
+        self.sock.sendall(f"{chunk_to_send}\n\n".encode("ASCII"))
 
     def file_request_handler(self, netfile):
         filepath = Path(Path(netfile).as_posix())
