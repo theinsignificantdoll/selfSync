@@ -136,7 +136,7 @@ class RequestHandler:
         ver = int(make_request(self.sock, "REQ_VER"))
         chunk_size = int(make_request(self.sock, "REQ_CHUNK_SIZE"))
         num_of_chunks = int(make_request(self.sock, "REQ_NUM_OF_CHUNKS"))
-        locfile = LocalFile(path, home, ver)
+        locfile = LocalFile(Path(Path(path).as_posix()), Path(Path(home).as_posix()), ver)
         made_hash = self.recv_file(locfile, chunk_size, num_of_chunks)
         if made_hash is False:
             return False
