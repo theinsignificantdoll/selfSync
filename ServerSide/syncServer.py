@@ -188,7 +188,10 @@ class RequestHandler:
 
     def file_request_handler(self, netfile):
         filepath = Path(Path(netfile).as_posix())
+        print(netfile, filepath)
         full_file_path = Path(serverstor.as_posix()) / filepath
+        print(full_file_path)
+        print()
 
         file_size = os.path.getsize(full_file_path)
         num_of_chunks = 0
