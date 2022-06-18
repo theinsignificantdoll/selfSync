@@ -172,6 +172,7 @@ class RequestHandler:
                 print("SENT")
                 chunk = self.sock.recv(chunk_size+1024)
                 if chunk == b"<<FAIL>>\n":
+                    print("FAIELED")
                     return False
 
                 hasher.update(chunk)

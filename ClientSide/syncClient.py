@@ -348,6 +348,7 @@ class Communicator:
                 self.sock.sendall(f"REQ_CHUNK_{n}\n".encode("ASCII"))
                 response = self.sock.recv(chunk_size+1024)
                 if response == b"<<FAIL>>\n":
+                    print("I FAILED")
                     return False
 
                 f.write(response)
