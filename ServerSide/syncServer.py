@@ -251,7 +251,6 @@ def loop_socklist():
         for ind, s in enumerate(soclist):
             try:
                 s_connected = s.loop()
-
                 if not s_connected:
                     to_delete.append(ind)
 
