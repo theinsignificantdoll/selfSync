@@ -188,9 +188,14 @@ class RequestHandler:
     def file_request_handler(self, netfile):
         filepath = netfile
         full_file_path = serverstor / filepath
+
         file_size = os.path.getsize(full_file_path)
-        num_of_chunks = file_size // self.chunk_size + 1
+        num_of_chunks = 0
+        if file_size != 0:
+            num_of_chunks = file_size // self.chunk_size + 1
+
         self.sock.sendall(b"Affirmative")
+
         request = self.sock.recv(1024)
         if request == b"REQ_NUM_OF_CHUNKS":
             self.sock.sendall(str(num_of_chunks).encode("ASCII"))

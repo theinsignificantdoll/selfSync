@@ -261,7 +261,10 @@ class Communicator:
     def add_or_update_file(self, locfile: LocalFile):
         netfile = loc_to_netfile(locfile)
 
-        num_of_chunks = os.path.getsize(locfile.local_path) // CHUNK_SIZE + 1
+        num_of_chunks = 0
+        file_size = os.path.getsize(locfile.local_path)
+        if file_size != 0:
+            num_of_chunks = file_size // CHUNK_SIZE + 1
 
         self.sock.sendall(b"REQ_ADD_FILE")
         on_request(self.sock, "REQ_HOME", str(netfile.home.parts[-1]))
