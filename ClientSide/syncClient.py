@@ -86,7 +86,7 @@ class FileManager:
         self.net_homes[p.parts[-1]] = p
 
     def update_within_net_home(self, home, comm):
-        self.within_net_home = comm.get_files_within_home(home)
+        self.within_net_home = comm.get_files_within_home(Path(home.parts[-1]))
 
     def update_local_files_within_home_index(self, home):
         self.local_files_within_home_index = self.read_home_index(home_to_home_index(home))
