@@ -247,6 +247,7 @@ def loop_socklist():
     global soclist
     to_delete = []
     while not has_exited:
+        time.sleep(0.01)
         for s in soclist:
             try:
                 s_connected = s.loop()
@@ -256,8 +257,8 @@ def loop_socklist():
 
             except socket.timeout:
                 continue
-    for s in to_delete:
-        soclist.remove(s)
+        for s in to_delete:
+            soclist.remove(s)
 
 
 if __name__ == "__main__":
