@@ -1,4 +1,14 @@
 ###################################################################
--Ensure single_file functionality
--Reuseable Server
--Easy functions for use.
+-Add a layer that can keep track of multiple
+
+
+
+
+
+
+X-Add callback functions for when;
+    X-Downloading
+    X-Uploading
+X-Ensure single_file functionality
+X-Reuseable Server
+X-Easy functions for use.

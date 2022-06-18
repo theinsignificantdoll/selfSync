@@ -14,6 +14,10 @@ to_delete_file = Path("todelete.file")
 index_extension = ".index"
 
 
+def _pass(_):
+    pass
+
+
 def home_to_home_index(home: str):
     return f"{home}{index_extension}"
 
@@ -178,15 +182,25 @@ class Manager:
     def do_single_file(self, single_file):
         locfile = file_manager.get_single_file(single_file)
         netfile = self.comm.get_files_within_home(locfile.home.parts[-1])
+        found_file = False
         for n in netfile:
             if n.path == locfile.path:
-                if n.ver > locfile.ver:
+                found_file = True
+                if n.ver > locfile.ver or not Path(single_file).exists():
                     self.comm.get_file(n, locfile.home)
                     locfile.ver = n.ver
+                    locfile.timestamp = int(os.path.getmtime(locfile.local_path))
                     file_manager.write_single_file(locfile)
-                return
+                continue
+        if not found_file:
+            self.comm.add_or_update_file(locfile)
+            file_manager.write_single_file(locfile)
+            return
 
-        self.comm.add_or_update_file(locfile)
+        if locfile.timestamp < int(os.path.getmtime(single_file)):
+            self.comm.add_or_update_file(locfile)
+            locfile.timestamp = int(os.path.getmtime(single_file))
+            file_manager.write_single_file(locfile)
 
     def download_missing_files(self):
         file_manager.update_within_net_home(self.search_dir, self.comm)
@@ -194,7 +208,7 @@ class Manager:
         file_manager.update_local_files_not_in_home_index(self.search_dir)
         for n in file_manager.within_net_home:
             locfile = net_to_locfile(n)
-            if str(locfile.local_path) not in file_manager.local_files_within_home_index:
+            if str(locfile.local_path) not in file_manager.local_files_within_home_index or not locfile.local_path.exists():
                 self.comm.get_file(n)
                 file_manager.add_file_to_home_index(locfile)
 
@@ -203,20 +217,22 @@ class Manager:
             locfile = net_to_locfile(n)
             if n.ver > file_manager.local_files_within_home_index[str(locfile.local_path)].ver:
                 self.comm.get_file(n)
-                locfile = net_to_locfile(n)  # Update to include timestamp
+                locfile.timestamp = int(os.path.getmtime(locfile.local_path))
+                locfile = net_to_locfile(n)
                 file_manager.add_file_to_home_index(locfile)
 
     def upload_missing_files(self):
         for n in file_manager.local_files_not_in_home_index:
-            print("ADDING:", n)
             self.comm.add_or_update_file(n)
             file_manager.add_file_to_home_index(n)
 
 
 class Communicator:
-    def __init__(self, port=59695, host="127.0.0.1"):
+    def __init__(self, port=59695, host="127.0.0.1", when_upload_callback=_pass, when_download_callback=_pass):
         self.host = host
         self.port = port
+        self.when_upload_callback = when_upload_callback
+        self.when_download_callback = when_download_callback
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((host, port))
 
@@ -225,7 +241,6 @@ class Communicator:
         chunk_recved = self.sock.recv(2**28).decode("ASCII")
 
         if chunk_recved == "RESP_HOME_EMPTY":
-            print("HOME EMPTY")
             return []
 
         out = []
@@ -254,6 +269,7 @@ class Communicator:
 
         made_hash = send_file(self.sock, locfile.local_path, CHUNK_SIZE, num_of_chunks)
         on_request(self.sock, "REQ_HASH", made_hash, to_send_is_bytes=True)
+        self.when_upload_callback(locfile.local_path)
 
     def get_file(self, netfile, optional_placement=None):
         """
@@ -263,13 +279,14 @@ class Communicator:
         :param optional_placement:
         :return True if success, otherwise False:
         """
-        print("Fetching:", netfile)
         recved_file_hash = self.recv_file(netfile)
         if recved_file_hash is False:
             return False
         if not self.check_file_integrity(recved_file_hash):
             return False
-        self.activate_file(netfile, optional_placement)
+        end_path = self.activate_file(netfile, optional_placement)
+
+        self.when_download_callback(Path(end_path))
 
     def recv_file(self, netfile):
         """
@@ -322,7 +339,6 @@ class Communicator:
         server_hash = self.sock.recv(1024)
         if temp_file_hash == server_hash:
             return True
-        print("Non-matching hash")
         return False
 
     def activate_file(self, netfile, optional_placement=None):
@@ -348,7 +364,7 @@ class Communicator:
 
         if os.path.exists(to_delete_file):
             os.remove(to_delete_file)
-        return True
+        return end_path
 
     def trigger_server_index_save(self):
         self.sock.sendall(b"REQ_SERVER_SAVE")
@@ -421,13 +437,25 @@ class ServerPath:
         return self.path
 
 
-def do_dir(direc):
-    c = Communicator()
+def do_dir(direc, when_upload_callback=_pass, when_download_callback=_pass):
+    c = Communicator(when_upload_callback=when_upload_callback, when_download_callback=when_download_callback)
     file_manager.add_dir(direc)
     Manager(c, direc)
     c.trigger_server_index_save()
 
 
+def do_single_file(path, when_upload_callback=_pass, when_download_callback=_pass):
+    c = Communicator(when_upload_callback=when_upload_callback, when_download_callback=when_download_callback)
+    file_manager.add_dir(path)
+    Manager(c, single_file=path)
+    c.trigger_server_index_save()
+
+
+m = lambda x: print(x, "Upload")
+n = lambda x: print(x, "Download")
+
+
 if __name__ == "__main__":
-    do_dir("clientdir")
+    do_single_file("testing/single_file.file", m, n)
+    do_dir("clientdir", m, n)
 

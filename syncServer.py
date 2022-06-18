@@ -3,10 +3,16 @@ import time
 import os
 import hashlib
 from pathlib import Path
+import threading
+
+
+soclist = []
+
+has_exited = False
 
 
 temp_file = Path("temp_server.file")
-to_delete_file = Path("todeleteserve.file")
+to_delete_file = Path("todeleteserver.file")
 index_file = Path("index.file")
 if not os.path.exists(index_file):
     with open(index_file, "w+") as f:
@@ -14,6 +20,8 @@ if not os.path.exists(index_file):
 
 
 serverstor = Path("serverstor")
+if not serverstor.exists():
+    os.mkdir(serverstor)
 
 
 def localfile_from_local_path(local_path, ver):
@@ -99,16 +107,19 @@ class RequestHandler:
 
     def loop(self):
         request = self.sock.recv(1024)
+        if request == b"":
+            return False
         if request.split(b":")[0] == b"recv_file":
-            print(self.file_request_handler(request.decode("ASCII").split(":")[1]))
+            self.file_request_handler(request.decode("ASCII").split(":")[1])
         elif request.split(b":")[0] == b"REQ_FILES_IN_HOME":
-            print(self.files_in_home_handler(Path(request.decode("ASCII").split(":")[1])))
+            self.files_in_home_handler(Path(request.decode("ASCII").split(":")[1]))
         elif request.split(b":")[0] == b"REQ_FILE_VER":
-            print(self.file_ver_handler(Path(str(request.split(b":")[1]))))
+            self.file_ver_handler(Path(str(request.split(b":")[1])))
         elif request.split(b":")[0] == b"REQ_ADD_FILE":
-            print(self.file_add_handler(), "File_add_handler")
+            self.file_add_handler(), "File_add_handler"
         elif request == b"REQ_SERVER_SAVE":
             file_manager.write_stor()
+        return True
 
     def file_add_handler(self):
         home = make_request(self.sock, "REQ_HOME").decode("ASCII")
@@ -147,7 +158,8 @@ class RequestHandler:
         ensure_folder_exists(serverstor / locfile.local_path.parent)
         os.rename(temp_file, serverstor / locfile.local_path)
         file_manager.add_or_update_local_file(locfile)
-        os.remove(to_delete_file)
+        if to_delete_file.exists():
+            os.remove(to_delete_file)
         return True
 
     def file_ver_handler(self, netpath):
@@ -161,12 +173,10 @@ class RequestHandler:
             self.sock.sendall(b"RESP_HOME_EMPTY")
             return
         for n in files_in_home:
-            print(n.path, n.home, n.ver, n.local_path)
             chunk_to_send += f"{n.local_path}///{n.ver}\n"
         self.sock.sendall(chunk_to_send.encode("ASCII"))
 
     def file_request_handler(self, netfile):
-        print(netfile)
         filepath = netfile
         full_file_path = serverstor / filepath
         file_size = os.path.getsize(full_file_path)
@@ -196,10 +206,8 @@ def ensure_folder_exists(path: Path):
 
 def send_hash(sock, local_file_hash):
     request = sock.recv(1024)
-    print("requesting hash?")
     if not request == b"REQ_NET_HASH":
         return False
-    print("sending hash")
 
     sock.sendall(local_file_hash)
     return True
@@ -225,6 +233,23 @@ def send_file(sock, filepath, chunk_size, num_of_chunks):
     return hasher.digest()
 
 
+def loop_socklist():
+    global soclist
+    to_delete = []
+    while not has_exited:
+        for s in soclist:
+            try:
+                s_connected = s.loop()
+
+                if not s_connected:
+                    to_delete.append(s)
+
+            except socket.timeout:
+                continue
+    for s in to_delete:
+        soclist.remove(s)
+
+
 if __name__ == "__main__":
     file_manager = FileManager()
     file_manager.read_stor()
@@ -235,11 +260,15 @@ if __name__ == "__main__":
     globsock.bind(("0.0.0.0", 59695))
     globsock.listen(1)
     print("Listening")
-    handle, address = globsock.accept()
-    print(address, "Connected")
+    loop_thread = threading.Thread(None, loop_socklist)
+    loop_thread.start()
 
-    h = RequestHandler(handle)
-    while True:
-        h.loop()
+    while not has_exited:
+        handle, address = globsock.accept()
+        print(address, "Connected")
+        handle.settimeout(0.01)
+
+        h = RequestHandler(handle)
+        soclist.append(h)
         time.sleep(0.1)
 
