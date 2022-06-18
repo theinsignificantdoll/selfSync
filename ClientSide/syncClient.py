@@ -97,7 +97,7 @@ class FileManager:
         self.local_files_not_in_home_index = []
         for n in all_files:
             if str(n) not in self.local_files_within_home_index:
-                self.local_files_not_in_home_index.append(local_file_from_local_path(n, 0))
+                self.local_files_not_in_home_index.append(LocalFile(n.relative_to(home.absolute()), home, n.ver))
 
     def read_home_index(self, home_index):
         out = {}
@@ -209,10 +209,8 @@ class Manager:
         file_manager.update_within_net_home(self.search_dir, self.comm)
         file_manager.update_local_files_within_home_index(self.search_dir)
         file_manager.update_local_files_not_in_home_index(self.search_dir)
-        print("missing")
         for n in file_manager.within_net_home:
             locfile = net_to_locfile(n)
-            print(n)
             if str(locfile.local_path) not in file_manager.local_files_within_home_index or not locfile.local_path.exists():
                 self.comm.get_file(n)
                 file_manager.add_file_to_home_index(locfile)
@@ -228,7 +226,6 @@ class Manager:
 
     def upload_missing_files(self):
         for n in file_manager.local_files_not_in_home_index:
-            print("Server missing;", n)
             self.comm.add_or_update_file(n)
             file_manager.add_file_to_home_index(n)
 
@@ -267,7 +264,6 @@ class Communicator:
         num_of_chunks = os.path.getsize(locfile.local_path) // CHUNK_SIZE + 1
 
         self.sock.sendall(b"REQ_ADD_FILE")
-        print(str(netfile.home.parts[-1]), netfile.path)
         on_request(self.sock, "REQ_HOME", str(netfile.home.parts[-1]))
         on_request(self.sock, "REQ_PATH", str(netfile.path))
         on_request(self.sock, "REQ_VER", str(netfile.ver))
