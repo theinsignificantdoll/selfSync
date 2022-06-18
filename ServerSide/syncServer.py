@@ -8,7 +8,7 @@ import threading
 
 
 host = "0.0.0.0"
-port = 3434
+port = 3737
 
 
 soclist = []
@@ -129,7 +129,7 @@ class RequestHandler:
 
     def loop(self):
         request = read_req(self.sock)
-        self.sock.settimeout(32)
+        self.sock.settimeout(1000)
         if request == b"":
             return False
         if request.split(b":")[0] == b"recv_file":
