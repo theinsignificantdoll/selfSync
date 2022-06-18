@@ -187,9 +187,9 @@ class RequestHandler:
         self.sock.sendall(chunk_to_send.encode("ASCII"))
 
     def file_request_handler(self, netfile):
-        filepath = Path(os.path.normpath(Path(Path(netfile).as_posix())))
+        filepath = Path(Path(netfile).as_posix())
         print(netfile, filepath)
-        full_file_path = Path(serverstor.as_posix()) / filepath
+        full_file_path = Path(str(Path(serverstor.as_posix()) / filepath).replace("\\", "/"))
         print(full_file_path)
         print()
 
