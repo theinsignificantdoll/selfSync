@@ -223,6 +223,7 @@ class RequestHandler:
 
         print("num_of")
         request = read_req(self.sock)
+        print("req", request, request == b"REQ_NUM_OF_CHUNKS")
         if request == b"REQ_NUM_OF_CHUNKS":
             print("SEND")
             self.sock.sendall(f"{str(num_of_chunks)}\n".encode("ASCII"))
