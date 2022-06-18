@@ -25,8 +25,6 @@ def read_req(sock):
         if m == b"":
             raise Exception()
         req += m
-        print(req)
-    print(req)
     return req.rstrip(b"\n")
 
 
@@ -170,6 +168,7 @@ def single_file_to_home_file(single_file):
 
 def on_request(sock: socket, req, to_send: str, to_send_is_bytes=False):
     request = read_req(sock).decode("ASCII")
+    print(request)
 
     if request == req:
         if to_send_is_bytes:

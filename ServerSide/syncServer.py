@@ -153,6 +153,7 @@ class RequestHandler:
         if made_hash is False:
             return False
 
+        print("REQ_HASH")
         recved_hash = make_request(self.sock, "REQ_HASH")
         if recved_hash != made_hash:
             return False
