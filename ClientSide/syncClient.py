@@ -51,6 +51,7 @@ def get_all_files_in(path: Path):
     for n in path.iterdir():
         if n.is_dir():
             out += [*get_all_files_in(n)]
+            continue
         out.append(Path(n))
     return out
 
