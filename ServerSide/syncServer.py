@@ -32,7 +32,10 @@ if not serverstor.exists():
 def read_req(sock):
     req = b""
     while len(req) == 0 or req[-1] != 10:
-        req += sock.recv(1024)
+        m = sock.recv(1024)
+        if m == b"":
+            raise Exception()
+        req += m
         print(req)
     print(req)
     return req.rstrip(b"\n")
