@@ -20,11 +20,14 @@ index_extension = ".index"
 
 def read_req(sock):
     req = b""
+    print("RECV")
     while len(req) == 0 or req[-1] != 10:
         m = sock.recv(1024)
+        print(m)
         if m == b"":
             raise Exception()
         req += m
+    print("RECVED")
     return req.rstrip(b"\n")
 
 
