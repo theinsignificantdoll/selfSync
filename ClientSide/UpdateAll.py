@@ -3,14 +3,22 @@ from syncClient import do_single_file, do_dir
 from pathlib import Path
 from plyer import notification
 import Logistics
+import sys
+
+
+notifications = True
+if "--no_notifications" in sys.argv:
+    notifications = False
 
 
 def notify_upload(x):
-    notification.notify("Uploading...", str(x))
+    if notifications:
+        notification.notify("Uploading...", str(x))
 
 
 def notify_download(x):
-    notification.notify("Downloading...", str(x))
+    if notifications:
+        notification.notify("Downloading...", str(x))
 
 
 file_handler = Logistics.FileHandler()
