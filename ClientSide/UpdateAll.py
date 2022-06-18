@@ -7,7 +7,6 @@ import sys
 
 
 notifications = True
-print(sys.argv)
 if "--no_notifications" in sys.argv:
     print("NOTIFICATIONS: OFF")
     notifications = False
@@ -25,7 +24,6 @@ def notify_download(x):
 
 file_handler = Logistics.FileHandler()
 file_handler.read_savefile()
-print(file_handler.saved)
 
 for n in file_handler.saved:
     if Path(n).is_dir():
