@@ -1,3 +1,4 @@
+#!/bin/python3
 from syncClient import do_single_file, do_dir
 from pathlib import Path
 from plyer import notification

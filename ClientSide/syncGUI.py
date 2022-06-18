@@ -1,3 +1,4 @@
+#!/bin/python3
 import PySimpleGUI as sg
 from tkinter import filedialog
 from Logistics import FileHandler
