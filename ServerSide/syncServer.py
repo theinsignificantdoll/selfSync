@@ -11,6 +11,9 @@ host = "0.0.0.0"
 port = 3737
 
 
+file_end_bytes = bytearray([57, 235, 37, 69, 151, 215, 36, 44, 10, 220, 128, 146, 217, 51, 163, 158, 194, 121, 127, 243, 183, 40, 225, 148, 82, 110, 57, 35, 104, 71, 112, 26])
+
+
 soclist = []
 
 has_exited = False
@@ -145,6 +148,14 @@ class RequestHandler:
         self.sock.settimeout(0.2)
         return True
 
+    def massive_chunk(self, chunk_size, end_bytes=b"\n\n"):
+        req = b""
+        print("massive chunk")
+        while len(req) < len(end_bytes) or req[-len(end_bytes):] != end_bytes:
+            req += self.sock.recv(chunk_size)
+        print("massive chink out")
+        return req.rstrip(end_bytes)
+
     def file_add_handler(self):
         home = make_request(self.sock, "REQ_HOME").decode("ASCII")
         path = make_request(self.sock, "REQ_PATH").decode("ASCII")
@@ -170,7 +181,7 @@ class RequestHandler:
                 print("SEND")
                 self.sock.sendall(f"REQ_CHUNK_{n}\n".encode("ASCII"))
                 print("SENT")
-                chunk = self.sock.recv(chunk_size+1024)
+                chunk = self.massive_chunk(chunk_size+1024, file_end_bytes)
                 if chunk == b"<<FAIL>>\n":
                     print("FAIELED")
                     return False
@@ -270,20 +281,20 @@ def send_file(sock, filepath, chunk_size, num_of_chunks):
             request = read_req(sock)
             if b"REQ_CHUNK_" not in request:
                 print("SEND")
-                sock.sendall(b"<<FAIL>>\n")
+                sock.sendall(b"<<FAIL>>\n" + file_end_bytes)
                 print("SENT")
                 return False
             chunk_num = int(request[len(b"REQ_CHUNK_"):])
             if not chunk_num == n:
                 print("SEND")
-                sock.sendall(b"<<FAIL>>\n")
+                sock.sendall(b"<<FAIL>>\n" + file_end_bytes)
                 print("SENT")
                 return False
 
             read = f.read(chunk_size)
             hasher.update(read)
             print("SEND")
-            sock.sendall(read)
+            sock.sendall(read + file_end_bytes)
             print("SENT")
 
     return hasher.digest()
