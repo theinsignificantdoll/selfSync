@@ -50,6 +50,9 @@ class LocalFile:
         self.ver = ver
         self.local_path = self.home / self.path
 
+    def __repr__(self):
+        return f"LocalFile({self.path}, {self.home}, {self.ver})"
+
 
 class FileManager:
     def __init__(self, serverstor=serverstor):
@@ -166,6 +169,7 @@ class RequestHandler:
         file_manager.add_or_update_local_file(locfile)
         if to_delete_file.exists():
             os.remove(to_delete_file)
+        print("ACTIVATED", locfile)
         return True
 
     def file_ver_handler(self, netpath):
