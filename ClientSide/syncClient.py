@@ -10,10 +10,10 @@ host = "127.0.0.1"
 port = 3434
 
 
-temp_file = Path("temp.file")
-index_temp_file = Path("temp_index.file")
-index_to_delete_file = Path("delete_index.file")
-to_delete_file = Path("todelete.file")
+temp_file = Path("temp.f")
+index_temp_file = Path("temp_index.f")
+index_to_delete_file = Path("delete_index.f")
+to_delete_file = Path("todelete.f")
 index_extension = ".index"
 
 
@@ -209,6 +209,7 @@ class Manager:
         file_manager.update_within_net_home(self.search_dir, self.comm)
         file_manager.update_local_files_within_home_index(self.search_dir)
         file_manager.update_local_files_not_in_home_index(self.search_dir)
+        print("missing")
         for n in file_manager.within_net_home:
             locfile = net_to_locfile(n)
             print(n)

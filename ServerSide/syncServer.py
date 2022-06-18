@@ -16,9 +16,9 @@ soclist = []
 has_exited = False
 
 
-temp_file = Path("temp_server.file")
-to_delete_file = Path("todeleteserver.file")
-index_file = Path("index.file")
+temp_file = Path("temp_server.f")
+to_delete_file = Path("todeleteserver.f")
+index_file = Path("index.f")
 if not os.path.exists(index_file):
     with open(index_file, "w+") as f:
         pass
