@@ -211,6 +211,7 @@ class Manager:
         file_manager.update_local_files_not_in_home_index(self.search_dir)
         for n in file_manager.within_net_home:
             locfile = net_to_locfile(n)
+            print(n)
             if str(locfile.local_path) not in file_manager.local_files_within_home_index or not locfile.local_path.exists():
                 self.comm.get_file(n)
                 file_manager.add_file_to_home_index(locfile)
@@ -226,6 +227,7 @@ class Manager:
 
     def upload_missing_files(self):
         for n in file_manager.local_files_not_in_home_index:
+            print("Server missing;", n)
             self.comm.add_or_update_file(n)
             file_manager.add_file_to_home_index(n)
 
