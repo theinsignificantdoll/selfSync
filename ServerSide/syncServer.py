@@ -90,6 +90,7 @@ class FileManager:
         return out
 
     def add_or_update_local_file(self, locfile: LocalFile, append_to_index=True):
+        locfile.ver += 1
         self.stored_files[locfile.local_path] = locfile
         if append_to_index:
             self.append_to_index(locfile)
