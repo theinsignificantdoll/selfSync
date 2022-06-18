@@ -17,6 +17,13 @@ to_delete_file = Path("todelete.f")
 index_extension = ".index"
 
 
+def read_req(sock):
+    req = b""
+    while req[-1] != b"\n":
+        req += sock.recv(1024)
+    return req.rstrip(b"\n")
+
+
 def _pass(_):
     pass
 
@@ -156,12 +163,13 @@ def single_file_to_home_file(single_file):
 
 
 def on_request(sock: socket, req, to_send: str, to_send_is_bytes=False):
-    request = sock.recv(1024).decode("ASCII")
+    request = read_req(sock).decode("ASCII")
+
     if request == req:
         if to_send_is_bytes:
-            sock.sendall(to_send)
+            sock.sendall(to_send + b"\n")
             return True
-        sock.sendall(to_send.encode("ASCII"))
+        sock.sendall((to_send + "\n").encode("ASCII"))
         return True
     return False
 
@@ -239,9 +247,15 @@ class Communicator:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((host, port))
 
+    def massive_chunk(self, chunk_size):
+        req = b""
+        while req[-2:] != b"\n\n":
+            req += self.sock.recv(chunk_size)
+        return req.rstrip(b"\n")
+
     def get_files_within_home(self, home):
-        self.sock.sendall(f"REQ_FILES_IN_HOME:{str(home)}".encode("ASCII"))
-        chunk_recved = self.sock.recv(2**28).decode("ASCII")
+        self.sock.sendall(f"REQ_FILES_IN_HOME:{str(home)}\n".encode("ASCII"))
+        chunk_recved = self.massive_chunk(2**28).decode("ASCII")
 
         if chunk_recved == "RESP_HOME_EMPTY":
             return []
@@ -255,8 +269,8 @@ class Communicator:
         return out
 
     def get_file_ver(self, netfile):
-        self.sock.sendall(f"REQ_FILE_VER:{netfile.net_path}".encode("ASCII"))
-        return int(self.sock.recv(1024))
+        self.sock.sendall(f"REQ_FILE_VER:{netfile.net_path}\n".encode("ASCII"))
+        return int(read_req(self.sock))
 
     def add_or_update_file(self, locfile: LocalFile):
         netfile = loc_to_netfile(locfile)
@@ -266,7 +280,7 @@ class Communicator:
         if file_size != 0:
             num_of_chunks = file_size // CHUNK_SIZE + 1
 
-        self.sock.sendall(b"REQ_ADD_FILE")
+        self.sock.sendall(b"REQ_ADD_FILE\n")
         on_request(self.sock, "REQ_HOME", str(netfile.home.parts[-1]))
         on_request(self.sock, "REQ_PATH", str(netfile.path.as_posix()))
         on_request(self.sock, "REQ_VER", str(netfile.ver))
@@ -302,17 +316,17 @@ class Communicator:
         :param netfile:
         :return: True if success otherwise False
         """
-        self.sock.sendall(f"recv_file:{netfile.net_path}".encode("ASCII"))
-        response = self.sock.recv(1024)
+        self.sock.sendall(f"recv_file:{netfile.net_path}\n".encode("ASCII"))
+        response = read_req(self.sock)
         if not response == b"Affirmative":
             return False
         try:
-            self.sock.sendall(b"REQ_NUM_OF_CHUNKS")
-            response = self.sock.recv(1024)
+            self.sock.sendall(b"REQ_NUM_OF_CHUNKS\n")
+            response = read_req(self.sock)
             num_of_chunks = int(response)
 
-            self.sock.sendall(b"REQ_CHUNK_SIZE")
-            response = self.sock.recv(1024)
+            self.sock.sendall(b"REQ_CHUNK_SIZE\n")
+            response = read_req(self.sock)
             chunk_size = int(response)
         except TypeError:
             return False
@@ -320,9 +334,9 @@ class Communicator:
         hasher = hashlib.sha256()
         with open(temp_file, "bw+") as f:
             for n in range(num_of_chunks):
-                self.sock.sendall(f"REQ_CHUNK_{n}".encode("ASCII"))
+                self.sock.sendall(f"REQ_CHUNK_{n}\n".encode("ASCII"))
                 response = self.sock.recv(chunk_size+1024)
-                if response == b"FAIL":
+                if response == b"<<FAIL>>\n":
                     return False
 
                 f.write(response)
@@ -342,8 +356,8 @@ class Communicator:
         if temp_file_hash is None:
             hasher = hashlib.sha256()
 
-        self.sock.sendall(b"REQ_NET_HASH")
-        server_hash = self.sock.recv(1024)
+        self.sock.sendall(b"REQ_NET_HASH\n")
+        server_hash = read_req(self.sock)
         if temp_file_hash == server_hash:
             return True
         return False
@@ -374,7 +388,7 @@ class Communicator:
         return end_path
 
     def trigger_server_index_save(self):
-        self.sock.sendall(b"REQ_SERVER_SAVE")
+        self.sock.sendall(b"REQ_SERVER_SAVE\n")
 
 
 def get_path_from_full(full_path):
@@ -420,13 +434,13 @@ def send_file(sock, filepath, chunk_size, num_of_chunks):
     hasher = hashlib.sha256()
     with open(filepath, "br") as f:
         for n in range(num_of_chunks):
-            request = sock.recv(1024)
+            request = read_req(sock)
             if b"REQ_CHUNK_" not in request:
-                sock.sendall(b"FAIL")
+                sock.sendall(b"<<FAIL>>\n")
                 return False
             chunk_num = int(request[len(b"REQ_CHUNK_"):])
             if not chunk_num == n:
-                sock.sendall(b"FAIL")
+                sock.sendall(b"<<FAIL>>\n")
                 return False
 
             read = f.read(chunk_size)
