@@ -353,6 +353,7 @@ class Communicator:
                 f.write(response)
                 hasher.update(response)
         temp_file_hash = hasher.digest()
+        print(temp_file_hash, "hahs")
         return temp_file_hash
 
     def check_file_integrity(self, temp_file_hash=None):
