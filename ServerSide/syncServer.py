@@ -259,7 +259,8 @@ def loop_socklist():
                 if not s_connected:
                     to_delete.append(ind)
 
-            except socket.timeout:
+            except (socket.timeout, ConnectionResetError) as e:
+                print(e)
                 continue
         to_delete.reverse()
         for s in to_delete:
