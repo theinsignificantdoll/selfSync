@@ -259,6 +259,7 @@ def loop_socklist():
                 continue
         for s in to_delete:
             soclist.remove(s)
+        to_delete.clear()
 
 
 if __name__ == "__main__":
