@@ -36,7 +36,7 @@ def read_req(sock):
     while len(req) == 0 or req[-1] != 10:
         m = sock.recv(1024)
         if m == b"":
-            raise Exception()
+            raise ConnectionResetError
         req += m
         print(req)
     print(req)
