@@ -97,7 +97,7 @@ class FileManager:
         self.local_files_not_in_home_index = []
         for n in all_files:
             if str(n) not in self.local_files_within_home_index:
-                self.local_files_not_in_home_index.append(LocalFile(n.relative_to(home.absolute()), home, n.ver))
+                self.local_files_not_in_home_index.append(LocalFile(n.relative_to(home.absolute()), home, 0))
 
     def read_home_index(self, home_index):
         out = {}
@@ -264,7 +264,6 @@ class Communicator:
         num_of_chunks = os.path.getsize(locfile.local_path) // CHUNK_SIZE + 1
 
         self.sock.sendall(b"REQ_ADD_FILE")
-        print(netfile.home.parts[-1], netfile.home, netfile.path)
         on_request(self.sock, "REQ_HOME", str(netfile.home.parts[-1]))
         on_request(self.sock, "REQ_PATH", str(netfile.path))
         on_request(self.sock, "REQ_VER", str(netfile.ver))
