@@ -20,7 +20,7 @@ index_extension = ".index"
 
 def read_req(sock):
     req = b""
-    while len(req) == 0 or req[-1] != b"\n":
+    while len(req) == 0 or req[-1] != 10:
         print("recvmomg`")
         req += sock.recv(1024)
         print(req)
