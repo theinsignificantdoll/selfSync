@@ -84,6 +84,7 @@ class FileManager:
         for d in self.stored_files:
             if self.stored_files[d].home == home:
                 out.append(self.stored_files[d])
+        print(home, out)
         return out
 
     def add_or_update_local_file(self, locfile: LocalFile, append_to_index=True):
