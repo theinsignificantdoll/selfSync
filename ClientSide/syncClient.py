@@ -19,7 +19,7 @@ def _pass(_):
 
 
 def home_to_home_index(home: str):
-    return f"{home}{index_extension}"
+    return f"{Path(home).parts[-1]}{index_extension}"
 
 
 def home_index_to_home(home_index: str):
@@ -74,9 +74,9 @@ class FileManager:
 
     def net_home_to_loc_home(self, net_home):
         try:
-            return self.net_homes[str(net_home)]
+            return self.net_homes[net_home.parts[-1]]
         except KeyError:
-            return ""
+            raise Exception("HOME UNKNOWN")
 
     def add_dir(self, path):
         p = Path(path)
@@ -449,13 +449,3 @@ def do_single_file(path, when_upload_callback=_pass, when_download_callback=_pas
     file_manager.add_dir(path)
     Manager(c, single_file=path)
     c.trigger_server_index_save()
-
-
-m = lambda x: print(x, "Upload")
-n = lambda x: print(x, "Download")
-
-
-if __name__ == "__main__":
-    do_single_file("testing/single_file.file", m, n)
-    do_dir("clientdir", m, n)
-

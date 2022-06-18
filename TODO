@@ -1,11 +1,12 @@
 ###################################################################
--Add a layer that can keep track of multiple
+-Add "run" scripts
 
 
 
 
 
-
+X-Add a graphical user interface
+X-Add a layer that can keep track of multiple files/directories
 X-Add callback functions for when;
     X-Downloading
     X-Uploading
