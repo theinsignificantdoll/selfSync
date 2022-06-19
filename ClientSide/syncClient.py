@@ -381,9 +381,9 @@ class Communicator:
             os.rename(end_path, to_delete_file)
 
         if optional_placement is None:
-            ensure_folder_exists(locfile.path.parent, locfile.home)
+            ensure_folder_exists(locfile.home / locfile.path.parent, locfile.home)
         else:
-            ensure_folder_exists(end_path.parent, Path(optional_placement))
+            ensure_folder_exists(Path(optional_placement) / end_path.parent, Path(optional_placement))
 
         os.rename(temp_file, end_path)
 
@@ -427,7 +427,7 @@ def loc_to_netfile(locfile):
 
 
 def ensure_folder_exists(path: Path, home: Path):
-    if path.exists() or path.parent == Path("") or path.parent == Path(home):
+    if path.exists() or path.parent == Path("") or path == Path(home):
         return True
     ensure_folder_exists(path.parent, home)
     path.mkdir()
