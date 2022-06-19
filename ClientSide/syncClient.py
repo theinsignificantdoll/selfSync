@@ -23,14 +23,12 @@ index_extension = ".index"
 
 def read_req(sock):
     req = b""
-    print("RECV")
     while len(req) == 0 or req[-1] != 10:
         m = sock.recv(1024)
         print(m)
         if m == b"":
             raise Exception()
         req += m
-    print("RECVED")
     return req.rstrip(b"\n")
 
 
@@ -175,7 +173,6 @@ def single_file_to_home_file(single_file):
 
 def on_request(sock: socket, req, to_send: str, to_send_is_bytes=False):
     request = read_req(sock).decode("ASCII")
-    print(request)
 
     if request == req:
         if to_send_is_bytes:
@@ -261,10 +258,8 @@ class Communicator:
 
     def massive_chunk(self, chunk_size, end_bytes=b"\n\n"):
         req = b""
-        print("massive chunk")
         while len(req) < len(end_bytes) or req[-len(end_bytes):] != end_bytes:
             req += self.sock.recv(chunk_size)
-        print("massive chink out")
         return req.rstrip(b"\n")
 
     def get_files_within_home(self, home):
@@ -336,7 +331,6 @@ class Communicator:
             return False
         try:
             self.sock.sendall(b"REQ_NUM_OF_CHUNKS\n")
-            print("REQ NU O FCHUNKS")
             response = read_req(self.sock)
             num_of_chunks = int(response)
 
@@ -352,13 +346,11 @@ class Communicator:
                 self.sock.sendall(f"REQ_CHUNK_{n}\n".encode("ASCII"))
                 response = self.massive_chunk(chunk_size+1024, file_end_bytes)
                 if response == b"<<FAIL>>\n":
-                    print("I FAILED")
                     return False
 
                 f.write(response)
                 hasher.update(response)
         temp_file_hash = hasher.digest()
-        print(temp_file_hash, "hahs")
         return temp_file_hash
 
     def check_file_integrity(self, temp_file_hash=None):

@@ -38,8 +38,6 @@ def read_req(sock):
         if m == b"":
             raise ConnectionResetError()
         req += m
-        print(req)
-    print(req)
     return req.rstrip(b"\n")
 
 
@@ -118,9 +116,7 @@ class FileManager:
 
 
 def make_request(sock: socket, req: str):
-    print("SEND")
     sock.sendall(f"{req}\n".encode("ASCII"))
-    print("SENT")
     response = read_req(sock)
     return response
 
@@ -150,10 +146,8 @@ class RequestHandler:
 
     def massive_chunk(self, chunk_size, end_bytes=b"\n\n"):
         req = b""
-        print("massive chunk")
         while len(req) < len(end_bytes) or req[-len(end_bytes):] != end_bytes:
             req += self.sock.recv(chunk_size)
-        print("massive chink out")
         return req.rstrip(end_bytes)
 
     def file_add_handler(self):
@@ -167,7 +161,6 @@ class RequestHandler:
         if made_hash is False:
             return False
 
-        print("REQ_HASH")
         recved_hash = make_request(self.sock, "REQ_HASH")
         if recved_hash != made_hash:
             return False
@@ -178,9 +171,7 @@ class RequestHandler:
         hasher = hashlib.sha256()
         with open(temp_file, "bw+") as f:
             for n in range(num_of_chunks):
-                print("SEND")
                 self.sock.sendall(f"REQ_CHUNK_{n}\n".encode("ASCII"))
-                print("SENT")
                 chunk = self.massive_chunk(chunk_size+1024, file_end_bytes)
                 if chunk == b"<<FAIL>>\n":
                     print("FAIELED")
@@ -204,23 +195,17 @@ class RequestHandler:
 
     def file_ver_handler(self, netpath):
         local_file_ver = file_manager.get_ver(netpath)
-        print("SEND")
         self.sock.sendall(f"{local_file_ver}\n".encode("ASCII"))
-        print("SENT")
 
     def files_in_home_handler(self, home):
         files_in_home = file_manager.files_in_home(home)
         chunk_to_send = ""
         if not files_in_home:
-            print("SEND")
             self.sock.sendall(b"RESP_HOME_EMPTY\n\n")
-            print("SENT")
             return
         for n in files_in_home:
             chunk_to_send += f"{n.local_path}///{n.ver}\n"
-        print("SEND")
         self.sock.sendall(f"{chunk_to_send}\n\n".encode("ASCII"))
-        print("SENT")
 
     def file_request_handler(self, netfile):
         filepath = Path(Path(netfile).as_posix())
@@ -231,24 +216,15 @@ class RequestHandler:
         if file_size != 0:
             num_of_chunks = file_size // self.chunk_size + 1
 
-        print("SEND")
         self.sock.sendall(b"Affirmative\n")
-        print("SENT")
 
-        print("num_of")
         request = read_req(self.sock)
-        print("req", request, request == b"REQ_NUM_OF_CHUNKS")
         if request == b"REQ_NUM_OF_CHUNKS":
-            print("SEND")
             self.sock.sendall(f"{str(num_of_chunks)}\n".encode("ASCII"))
-            print("SENT")
 
-        print("chunksss")
         request = read_req(self.sock)
         if request == b"REQ_CHUNK_SIZE":
-            print("SEND")
             self.sock.sendall(f"{str(self.chunk_size)}\n".encode("ASCII"))
-            print("SENT")
 
         local_file_hash = send_file(self.sock, full_file_path, self.chunk_size, num_of_chunks)
         if local_file_hash is False:
@@ -268,9 +244,7 @@ def send_hash(sock, local_file_hash):
     request = read_req(sock)
     if not request == b"REQ_NET_HASH":
         return False
-    print("SEND")
     sock.sendall(local_file_hash + b"\n")
-    print("SENT")
     return True
 
 
@@ -280,22 +254,16 @@ def send_file(sock, filepath, chunk_size, num_of_chunks):
         for n in range(num_of_chunks):
             request = read_req(sock)
             if b"REQ_CHUNK_" not in request:
-                print("SEND")
                 sock.sendall(b"<<FAIL>>\n" + file_end_bytes)
-                print("SENT")
                 return False
             chunk_num = int(request[len(b"REQ_CHUNK_"):])
             if not chunk_num == n:
-                print("SEND")
                 sock.sendall(b"<<FAIL>>\n" + file_end_bytes)
-                print("SENT")
                 return False
 
             read = f.read(chunk_size)
             hasher.update(read)
-            print("SEND")
             sock.sendall(read + file_end_bytes)
-            print("SENT")
 
     return hasher.digest()
 
