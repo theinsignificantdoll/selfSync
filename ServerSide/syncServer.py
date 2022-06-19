@@ -174,7 +174,7 @@ class RequestHandler:
                 self.sock.sendall(f"REQ_CHUNK_{n}\n".encode("ASCII"))
                 chunk = self.massive_chunk(chunk_size+1024, file_end_bytes)
                 if chunk == b"<<FAIL>>\n":
-                    print("FAIELED")
+                    print("FAILED")
                     return False
 
                 hasher.update(chunk)
@@ -262,7 +262,6 @@ def send_file(sock, filepath, chunk_size, num_of_chunks):
                 return False
 
             read = f.read(chunk_size)
-            print(read)
             hasher.update(read)
             sock.sendall(read + file_end_bytes)
 

@@ -321,7 +321,6 @@ class Communicator:
             print("HASH ERROR (NOT MATCHING)", netfile)
             return False
         end_path = self.activate_file(netfile, optional_placement)
-        print()
 
         self.when_download_callback(Path(end_path))
 
@@ -352,7 +351,6 @@ class Communicator:
             for n in range(num_of_chunks):
                 self.sock.sendall(f"REQ_CHUNK_{n}\n".encode("ASCII"))
                 response = self.massive_chunk(chunk_size+1024, file_end_bytes)
-                print(response)
                 if response == b"<<FAIL>>\n":
                     return False
 
@@ -373,7 +371,6 @@ class Communicator:
         server_hash = read_req(self.sock)
         if temp_file_hash == server_hash:
             return True
-        print(temp_file_hash, "\n", server_hash)
         return False
 
     def activate_file(self, netfile, optional_placement=None):
@@ -386,8 +383,6 @@ class Communicator:
         end_path = locfile.local_path
         if optional_placement is not None:
             end_path = optional_placement / locfile.path
-
-        print(end_path)
 
         if os.path.exists(end_path):
             os.rename(end_path, to_delete_file)
