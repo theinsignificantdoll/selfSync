@@ -255,9 +255,9 @@ class Manager:
             if n.ver > file_manager.local_files_within_home_index[str(locfile.local_path)].ver:
                 if not self.comm.get_file(n):
                     continue  # IF .get_file() fails
-                locfile.timestamp = int(os.path.getmtime(locfile.local_path))
                 locfile = net_to_locfile(n)
-                file_manager.add_file_to_home_index(locfile)
+                locfile.timestamp = int(os.path.getmtime(locfile.local_path))
+                file_manager.local_files_within_home_index[str(locfile.local_path)] = locfile
 
     def upload_missing_files(self):
         for n in file_manager.local_files_not_in_home_index:
@@ -349,6 +349,7 @@ class Communicator:
         end_path = self.activate_file(netfile, optional_placement)
 
         self.when_download_callback(Path(end_path))
+        return True
 
     def recv_file(self, netfile):
         """

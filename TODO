@@ -5,6 +5,7 @@
 
 
 
+X-fix client immediately uploading downloaded files
 X-make it update files that have been changed
 X-k.txt isn't downloaded? /CLIENTSIDE  ( BECAUSE OF END LINE "\n")
 X-Can't download files with anything in them? /CLIENTSIDE
