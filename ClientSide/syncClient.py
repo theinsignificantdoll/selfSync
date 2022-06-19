@@ -86,6 +86,7 @@ class NetFile:
 class FileManager:
     def __init__(self):
         self.net_homes = {}  # USES Path OBJECTS
+        self.local_homes = {}
         self.within_net_home = []
         self.local_files_within_home_index = {}  # {Path(Local_Path): LocalFile}
         self.local_files_not_in_home_index = []
@@ -96,9 +97,17 @@ class FileManager:
         except KeyError:
             raise Exception("HOME UNKNOWN")
 
+    def local_path_to_local_home(self, local_path: Path):
+        for n in local_path.parents:
+            if n in self.local_homes:
+                return n
+
+        return ""
+
     def add_dir(self, path):
         p = Path(path)
         self.net_homes[p.parts[-1]] = p
+        self.local_homes[p] = p.parts[-1]
 
     def update_within_net_home(self, home, comm):
         self.within_net_home = comm.get_files_within_home(Path(home.parts[-1]))
@@ -196,6 +205,7 @@ class Manager:
         self.download_missing_files()
         self.download_outdated()
         self.upload_missing_files()
+        self.upload_locally_changed_files()
         file_manager.write_local_files_to_home_index(search_dir)
 
     def do_single_file(self, single_file):
@@ -249,6 +259,18 @@ class Manager:
         for n in file_manager.local_files_not_in_home_index:
             self.comm.add_or_update_file(n)
             file_manager.add_file_to_home_index(n)
+
+    def upload_locally_changed_files(self):
+        for n in file_manager.local_files_within_home_index:
+            if int(os.path.getmtime(file_manager.local_files_within_home_index[n].local_path)) > \
+                    file_manager.local_files_within_home_index[n].timestamp:
+
+                self.comm.add_or_update_file(file_manager.local_files_within_home_index[n])
+
+                file_manager.local_files_within_home_index[n].timestamp = \
+                    int(os.path.getmtime(file_manager.local_files_within_home_index[n].local_path))
+
+                file_manager.local_files_within_home_index[n].ver += 1
 
 
 class Communicator:
@@ -418,8 +440,9 @@ def netfile_from_net_path(net_path, ver):
 
 def local_file_from_local_path(local_path, ver, timestamp=None):
     p = Path(local_path)
+    home = file_manager.local_path_to_local_home(p)
     if len(p.parts) > 1:
-        return LocalFile(get_path_from_full(p), Path(p.parts[0]), ver, timestamp)
+        return LocalFile(p.relative_to(Path(home)), home, ver, timestamp)
     return LocalFile(Path(local_path), Path(""), ver, timestamp)
 
 

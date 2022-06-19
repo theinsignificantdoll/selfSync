@@ -1,12 +1,12 @@
 ###################################################################
--k.txt isn't downloaded? /CLIENTSIDE  ( BECAUSE OF END LINE "\n")
-
+-make it update files that have been changed
 -don't request SERVER_SAVE if nothing happened
 
 
 
 
 
+X-k.txt isn't downloaded? /CLIENTSIDE  ( BECAUSE OF END LINE "\n")
 X-Can't download files with anything in them? /CLIENTSIDE
 X-syncClient doesn't seem to make folders
 X-Fix bug that makes it stuck
