@@ -315,6 +315,7 @@ def loop_socklist():
             except (socket.timeout, ConnectionResetError) as e:
                 if e != socket.timeout:
                     print(e, [e])
+                    to_delete.append(ind)
                 continue
         to_delete.reverse()
         for s in to_delete:
