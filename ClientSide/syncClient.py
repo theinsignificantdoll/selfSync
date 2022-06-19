@@ -241,7 +241,11 @@ class Manager:
             if str(locfile.local_path) not in file_manager.local_files_within_home_index or not locfile.local_path.exists():
                 if not self.comm.get_file(n):
                     continue  # IF .get_file() fails
-                file_manager.add_file_to_home_index(locfile)
+                if str(locfile.local_path) in file_manager.local_files_within_home_index:
+                    file_manager.local_files_within_home_index[str(locfile.local_path)].timestamp = int(os.path.getmtime(locfile.local_path))
+                    file_manager.local_files_within_home_index[str(locfile.local_path)].ver = n.ver
+                else:
+                    file_manager.add_file_to_home_index(locfile)
 
     def download_outdated(self):
         for n in file_manager.within_net_home:
