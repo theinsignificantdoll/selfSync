@@ -1,5 +1,5 @@
 ###################################################################
--k.txt isn't downloaded? /CLIENTSIDE
+-k.txt isn't downloaded? /CLIENTSIDE  ( BECAUSE OF END LINE "\n")
 
 -don't request SERVER_SAVE if nothing happened
 

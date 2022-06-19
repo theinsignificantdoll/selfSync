@@ -148,7 +148,7 @@ class RequestHandler:
         req = b""
         while len(req) < len(end_bytes) or req[-len(end_bytes):] != end_bytes:
             req += self.sock.recv(chunk_size)
-        return req.rstrip(end_bytes)
+        return req[:-len(end_bytes)]
 
     def file_add_handler(self):
         home = make_request(self.sock, "REQ_HOME").decode("ASCII")

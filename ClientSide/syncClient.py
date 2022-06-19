@@ -264,7 +264,7 @@ class Communicator:
         req = b""
         while len(req) < len(end_bytes) or req[-len(end_bytes):] != end_bytes:
             req += self.sock.recv(chunk_size)
-        return req.rstrip(end_bytes)
+        return req[:-len(end_bytes)]
 
     def get_files_within_home(self, home):
         self.sock.sendall(f"REQ_FILES_IN_HOME:{str(home)}\n".encode("ASCII"))
