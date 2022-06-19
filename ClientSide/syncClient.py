@@ -206,7 +206,8 @@ class Manager:
             if n.path == locfile.path:
                 found_file = True
                 if n.ver > locfile.ver or not Path(single_file).exists():
-                    self.comm.get_file(n, locfile.home)
+                    if not self.comm.get_file(n, locfile.home):
+                        continue  # IF .get_file() fails
                     locfile.ver = n.ver
                     locfile.timestamp = int(os.path.getmtime(locfile.local_path))
                     file_manager.write_single_file(locfile)
@@ -228,14 +229,18 @@ class Manager:
         for n in file_manager.within_net_home:
             locfile = net_to_locfile(n)
             if str(locfile.local_path) not in file_manager.local_files_within_home_index or not locfile.local_path.exists():
-                self.comm.get_file(n)
+                if not self.comm.get_file(n):
+                    continue  # IF .get_file() fails
                 file_manager.add_file_to_home_index(locfile)
 
     def download_outdated(self):
         for n in file_manager.within_net_home:
             locfile = net_to_locfile(n)
+            if str(locfile.local_path) not in file_manager.local_files_within_home_index:
+                continue
             if n.ver > file_manager.local_files_within_home_index[str(locfile.local_path)].ver:
-                self.comm.get_file(n)
+                if not self.comm.get_file(n):
+                    continue  # IF .get_file() fails
                 locfile.timestamp = int(os.path.getmtime(locfile.local_path))
                 locfile = net_to_locfile(n)
                 file_manager.add_file_to_home_index(locfile)
@@ -259,7 +264,7 @@ class Communicator:
         req = b""
         while len(req) < len(end_bytes) or req[-len(end_bytes):] != end_bytes:
             req += self.sock.recv(chunk_size)
-        return req.rstrip(b"\n")
+        return req.rstrip(end_bytes)
 
     def get_files_within_home(self, home):
         self.sock.sendall(f"REQ_FILES_IN_HOME:{str(home)}\n".encode("ASCII"))
@@ -310,10 +315,13 @@ class Communicator:
         """
         recved_file_hash = self.recv_file(netfile)  # METHOD RETURNS HASH OF DOWNLOADED FILE
         if recved_file_hash is False:
+            print("HASH ERROR (DID NOT RECEIVE)", netfile)
             return False
         if not self.check_file_integrity(recved_file_hash):
+            print("HASH ERROR (NOT MATCHING)", netfile)
             return False
         end_path = self.activate_file(netfile, optional_placement)
+        print()
 
         self.when_download_callback(Path(end_path))
 
@@ -344,6 +352,7 @@ class Communicator:
             for n in range(num_of_chunks):
                 self.sock.sendall(f"REQ_CHUNK_{n}\n".encode("ASCII"))
                 response = self.massive_chunk(chunk_size+1024, file_end_bytes)
+                print(response)
                 if response == b"<<FAIL>>\n":
                     return False
 
@@ -364,6 +373,7 @@ class Communicator:
         server_hash = read_req(self.sock)
         if temp_file_hash == server_hash:
             return True
+        print(temp_file_hash, "\n", server_hash)
         return False
 
     def activate_file(self, netfile, optional_placement=None):
@@ -376,6 +386,8 @@ class Communicator:
         end_path = locfile.local_path
         if optional_placement is not None:
             end_path = optional_placement / locfile.path
+
+        print(end_path)
 
         if os.path.exists(end_path):
             os.rename(end_path, to_delete_file)

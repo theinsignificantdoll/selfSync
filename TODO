@@ -1,11 +1,14 @@
 ###################################################################
--syncClient doesn't seem to make folders
+-k.txt isn't downloaded? /CLIENTSIDE
+
 -don't request SERVER_SAVE if nothing happened
 
 
 
 
 
+X-Can't download files with anything in them? /CLIENTSIDE
+X-syncClient doesn't seem to make folders
 X-Fix bug that makes it stuck
 X-Add "run" scripts
 X-Add a graphical user interface

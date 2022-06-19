@@ -262,6 +262,7 @@ def send_file(sock, filepath, chunk_size, num_of_chunks):
                 return False
 
             read = f.read(chunk_size)
+            print(read)
             hasher.update(read)
             sock.sendall(read + file_end_bytes)
 
