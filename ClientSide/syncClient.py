@@ -25,7 +25,6 @@ def read_req(sock):
     req = b""
     while len(req) == 0 or req[-1] != 10:
         m = sock.recv(1024)
-        print(m)
         if m == b"":
             raise Exception()
         req += m
@@ -309,7 +308,7 @@ class Communicator:
         :param optional_placement:
         :return True if success, otherwise False:
         """
-        recved_file_hash = self.recv_file(netfile)
+        recved_file_hash = self.recv_file(netfile)  # METHOD RETURNS HASH OF DOWNLOADED FILE
         if recved_file_hash is False:
             return False
         if not self.check_file_integrity(recved_file_hash):
@@ -323,7 +322,7 @@ class Communicator:
         download netfile as temp.file
 
         :param netfile:
-        :return: True if success otherwise False
+        :return: hash of file if success otherwise FALSE
         """
         self.sock.sendall(f"recv_file:{netfile.net_path}\n".encode("ASCII"))
         response = read_req(self.sock)
@@ -353,17 +352,13 @@ class Communicator:
         temp_file_hash = hasher.digest()
         return temp_file_hash
 
-    def check_file_integrity(self, temp_file_hash=None):
+    def check_file_integrity(self, temp_file_hash):
         """
         checks temp.file integrity (hash)
 
-        :param temp_file_hash: If None: calculate hash manually; otherwise: use given.
-        :param netfile:
+        :param temp_file_hash: The hash that will be compared to the server's hash
         :return: True if Success otherwise False
         """
-
-        if temp_file_hash is None:
-            hasher = hashlib.sha256()
 
         self.sock.sendall(b"REQ_NET_HASH\n")
         server_hash = read_req(self.sock)
@@ -386,9 +381,9 @@ class Communicator:
             os.rename(end_path, to_delete_file)
 
         if optional_placement is None:
-            ensure_folder_exists(locfile.path, locfile.home)
+            ensure_folder_exists(locfile.path.parent, locfile.home)
         else:
-            ensure_folder_exists(end_path, Path(optional_placement))
+            ensure_folder_exists(end_path.parent, Path(optional_placement))
 
         os.rename(temp_file, end_path)
 

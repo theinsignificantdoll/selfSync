@@ -1,11 +1,12 @@
 ###################################################################
--Fix bug that makes it stuck
+-syncClient doesn't seem to make folders
+-don't request SERVER_SAVE if nothing happened
 
 
 
 
 
-
+X-Fix bug that makes it stuck
 X-Add "run" scripts
 X-Add a graphical user interface
 X-Add a layer that can keep track of multiple files/directories
