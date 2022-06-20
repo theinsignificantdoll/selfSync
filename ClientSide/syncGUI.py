@@ -26,7 +26,7 @@ def add_file_or_dir(directory):
     if directory:
         f = filedialog.askdirectory()
     else:
-        f = filedialog.askopenfile()
+        f = filedialog.askopenfilename()
     if f is None:
         return
     file_handler.append(f)
