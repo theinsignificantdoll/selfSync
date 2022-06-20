@@ -508,7 +508,7 @@ def get_communicator(when_upload_callback=_pass, when_download_callback=_pass):
     for n in range(len(host_list)):
         try:
             return Communicator(port_list[n], host_list[n], when_upload_callback, when_download_callback, initial_connection_timeout=0.5)
-        except (ConnectionRefusedError, socket.timeout) as e :
+        except (ConnectionRefusedError, socket.timeout) as e:
             print(host_list[n], port_list[n], "FAILED", e)
             continue
     return False
