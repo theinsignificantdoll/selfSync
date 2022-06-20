@@ -253,7 +253,9 @@ class Manager:
     def download_missing_files(self):
         for n in file_manager.within_net_home:
             locfile = net_to_locfile(n)
-            if str(locfile.local_path) not in file_manager.local_files_within_home_index or not locfile.local_path.exists():
+            if (str(locfile.local_path) not in file_manager.local_files_within_home_index
+                    or not locfile.local_path.exists()) \
+                    and not n.ver < 0:
                 if not self.comm.get_file(n):
                     continue  # IF .get_file() fails
                 if str(locfile.local_path) in file_manager.local_files_within_home_index:
