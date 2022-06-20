@@ -175,7 +175,7 @@ class RequestHandler:
         return req[:-len(end_bytes)]
 
     def deactivate_file(self, path):
-        locfile = file_manager.stored_files[path]
+        locfile = file_manager.stored_files[Path(str(path).replace("\\", "/"))]
         file_manager.deactivate_file(locfile)
         self.sock.sendall(b"A")
 
