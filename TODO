@@ -1,7 +1,7 @@
 ###################################################################
--Add switching between hosts based on network
--Finish UpdateAll
--efficiency improvements
+-Add switching between hosts based on network ( NEED TO TEST )
+-Finish UpdateAll ( NEED TO TEST )
+-efficiency improvements ( I MIGHT BE TOO LAZY FOR THIS ONE )
 -test single_file functionality
 -don't request SERVER_SAVE if nothing happened
 
