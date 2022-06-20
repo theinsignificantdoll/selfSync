@@ -88,7 +88,7 @@ class FileManager:
         self.net_homes = {}  # USES Path OBJECTS
         self.local_homes = {}
         self.within_net_home = []
-        self.local_files_within_home_index = {}  # {Path(Local_Path): LocalFile}
+        self.local_files_within_home_index = {}  # {str(Local_Path): LocalFile}
         self.local_files_not_in_home_index = []
 
     def net_home_to_loc_home(self, net_home):
@@ -157,8 +157,8 @@ class FileManager:
         self.local_files_within_home_index[str(locfile.local_path)] = locfile
 
     def remove_file(self, locfile):
-        if locfile.local_path in self.local_files_within_home_index:
-            self.local_files_within_home_index.pop(locfile.local_path)
+        if str(locfile.local_path) in self.local_files_within_home_index:
+            self.local_files_within_home_index.pop(str(locfile.local_path))
         if locfile.local_path.exists():
             os.remove(locfile.local_path)
 
@@ -245,16 +245,19 @@ class Manager:
             file_manager.write_single_file(locfile)
 
     def remove_deactivated_files(self):
+        to_remove = []
         for n in file_manager.local_files_within_home_index:
             if file_manager.local_files_within_home_index[n].ver < 0:
-                file_manager.remove_file(file_manager.local_files_within_home_index[n])
-                self.comm.send_remove_file(file_manager.local_files_within_home_index[n])
+                to_remove.append(file_manager.local_files_within_home_index[n])
+        for n in to_remove:
+            file_manager.remove_file(n)
+            self.comm.send_remove_file(n)
 
     def download_missing_files(self):
         for n in file_manager.within_net_home:
             locfile = net_to_locfile(n)
             if (str(locfile.local_path) not in file_manager.local_files_within_home_index
-                    or not locfile.local_path.exists()) \
+                or not locfile.local_path.exists()) \
                     and not n.ver < 0:
 
                 if not self.comm.get_file(n):
@@ -268,6 +271,11 @@ class Manager:
     def download_outdated(self):
         for n in file_manager.within_net_home:
             locfile = net_to_locfile(n)
+
+            if n.ver < 0:
+                file_manager.remove_file(locfile)
+                continue
+
             if str(locfile.local_path) not in file_manager.local_files_within_home_index:
                 continue
             if n.ver > file_manager.local_files_within_home_index[str(locfile.local_path)].ver:
@@ -335,9 +343,11 @@ class Communicator:
                 break
             ns = n.split("///")
             ver = int(ns[1])
-            out.append(netfile_from_net_path(ns[0], ver))
+            netfile = netfile_from_net_path(ns[0], ver)
             if ver < 0:
-                file_manager.remove_file(net_to_locfile(out[-1]))
+                file_manager.remove_file(net_to_locfile(netfile))
+                continue
+            out.append(netfile)
         return out
 
     def get_file_ver(self, netfile):
