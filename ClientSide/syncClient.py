@@ -454,7 +454,10 @@ def local_file_from_local_path(local_path, ver, timestamp=None):
     p = Path(local_path)
     home = file_manager.local_path_to_local_home(p)
     if len(p.parts) > 1:
-        return LocalFile(p.relative_to(Path(home)), home, ver, timestamp)
+        try:
+            return LocalFile(p.relative_to(Path(home)), home, ver, timestamp)
+        except ValueError:
+            return LocalFile(p.parts[-1], p.parent, ver, timestamp)
     return LocalFile(Path(local_path), Path(""), ver, timestamp)
 
 
@@ -507,7 +510,7 @@ class ServerPath:
 def get_communicator(when_upload_callback=_pass, when_download_callback=_pass):
     for n in range(len(host_list)):
         try:
-            return Communicator(port_list[n], host_list[n], when_upload_callback, when_download_callback, initial_connection_timeout=0.5)
+            return Communicator(port_list[n], host_list[n], when_upload_callback, when_download_callback, initial_connection_timeout=1)
         except (ConnectionRefusedError, socket.timeout) as e:
             print(host_list[n], port_list[n], "FAILED", e)
             continue
@@ -515,14 +518,18 @@ def get_communicator(when_upload_callback=_pass, when_download_callback=_pass):
 
 
 def do_dir(direc, when_upload_callback=_pass, when_download_callback=_pass):
-    c = get_communicator(when_upload_callback=when_upload_callback, when_download_callback=when_download_callback)
+    c = False
+    while c is False:
+        c = get_communicator(when_upload_callback=when_upload_callback, when_download_callback=when_download_callback)
     file_manager.add_dir(direc)
     Manager(c, direc)
     c.trigger_server_index_save()
 
 
 def do_single_file(path, when_upload_callback=_pass, when_download_callback=_pass):
-    c = get_communicator(when_upload_callback=when_upload_callback, when_download_callback=when_download_callback)
-    file_manager.add_dir(path)
+    c = False
+    while c is False:
+        c = get_communicator(when_upload_callback=when_upload_callback, when_download_callback=when_download_callback)
+    file_manager.add_dir(Path(path).parent)
     Manager(c, single_file=path)
     c.trigger_server_index_save()

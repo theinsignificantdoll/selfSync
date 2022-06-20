@@ -2,13 +2,13 @@
 -Add switching between hosts based on network ( NEED TO TEST )
 -Finish UpdateAll ( NEED TO TEST )
 -efficiency improvements ( I MIGHT BE TOO LAZY FOR THIS ONE )
--test single_file functionality
 -don't request SERVER_SAVE if nothing happened
 
 
 
 
 
+X-test single_file functionality
 X-fix client immediately uploading downloaded files
 X-make it update files that have been changed
 X-k.txt isn't downloaded? /CLIENTSIDE  ( BECAUSE OF END LINE "\n")
