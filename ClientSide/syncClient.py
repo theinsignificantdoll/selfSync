@@ -7,7 +7,7 @@ from pathlib import Path
 CHUNK_SIZE = 2**16
 
 
-port = 3737
+port_list = [3737]
 host_list = ["127.0.0.1"]
 
 
@@ -278,13 +278,20 @@ class Manager:
 
 
 class Communicator:
-    def __init__(self, port=port, host=host_list[0], when_upload_callback=_pass, when_download_callback=_pass):
+    def __init__(self, port=port_list[0], host=host_list[0], when_upload_callback=_pass, when_download_callback=_pass,
+                 initial_connection_timeout=None):
         self.host = host
         self.port = port
         self.when_upload_callback = when_upload_callback
         self.when_download_callback = when_download_callback
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        original_timeout = None
+        if initial_connection_timeout is not None:
+            original_timeout = self.sock.gettimeout()
+            self.sock.settimeout(initial_connection_timeout)
         self.sock.connect((host, port))
+        if original_timeout is not None:
+            self.sock.settimeout(original_timeout)
 
     def massive_chunk(self, chunk_size, end_bytes=b"\n\n"):
         req = b""
@@ -498,12 +505,13 @@ class ServerPath:
 
 
 def get_communicator(when_upload_callback=_pass, when_download_callback=_pass):
-    for h in host_list:
+    for n in range(len(host_list)):
         try:
-            return Communicator(port, h, when_upload_callback, when_download_callback)
-        except (ConnectionRefusedError):
-            print(h, "FAILED")
+            return Communicator(port_list[n], host_list[n], when_upload_callback, when_download_callback, initial_connection_timeout=0.5)
+        except (ConnectionRefusedError, socket.timeout) as e :
+            print(host_list[n], port_list[n], "FAILED", e)
             continue
+    return False
 
 
 def do_dir(direc, when_upload_callback=_pass, when_download_callback=_pass):
