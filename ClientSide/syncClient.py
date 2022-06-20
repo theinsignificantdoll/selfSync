@@ -247,7 +247,8 @@ class Manager:
     def remove_deactivated_files(self):
         for n in file_manager.local_files_within_home_index:
             if file_manager.local_files_within_home_index[n].ver < 0:
-                file_manager.remove_file(self.comm.send_remove_file(file_manager.local_files_within_home_index[n]))
+                file_manager.remove_file(file_manager.local_files_within_home_index[n])
+                self.comm.send_remove_file(file_manager.local_files_within_home_index[n])
 
     def download_missing_files(self):
         for n in file_manager.within_net_home:
