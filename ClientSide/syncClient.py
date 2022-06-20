@@ -214,7 +214,6 @@ class Manager:
         file_manager.update_local_files_not_in_home_index(self.search_dir)
 
         self.remove_deactivated_files()
-
         self.download_missing_files()
         self.download_outdated()
         self.upload_missing_files()

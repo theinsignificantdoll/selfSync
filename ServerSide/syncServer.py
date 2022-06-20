@@ -162,7 +162,7 @@ class RequestHandler:
         elif request.split(b":")[0] == b"REQ_ADD_FILE":
             self.file_add_handler()
         elif request.split(b":")[0] == b"REQ_DEACTIVATE_FILE":
-            self.deactivate_file(Path(str(request.split(b":")[1])))
+            self.deactivate_file(Path(request.split(b":")[1].decode("ASCII")))
         elif request == b"REQ_SERVER_SAVE":
             file_manager.write_stor()
         self.sock.settimeout(0.2)
