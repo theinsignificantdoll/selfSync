@@ -7,8 +7,8 @@ from pathlib import Path
 CHUNK_SIZE = 2**16
 
 
-host = "127.0.0.1"
 port = 3737
+host_list = ["127.0.0.1"]
 
 
 file_end_bytes = bytearray([57, 235, 37, 69, 151, 215, 36, 44, 10, 220, 128, 146, 217, 51, 163, 158, 194, 121, 127, 243, 183, 40, 225, 148, 82, 110, 57, 35, 104, 71, 112, 26])
@@ -278,7 +278,7 @@ class Manager:
 
 
 class Communicator:
-    def __init__(self, port=port, host=host, when_upload_callback=_pass, when_download_callback=_pass):
+    def __init__(self, port=port, host=host_list[0], when_upload_callback=_pass, when_download_callback=_pass):
         self.host = host
         self.port = port
         self.when_upload_callback = when_upload_callback
@@ -497,15 +497,24 @@ class ServerPath:
         return self.path
 
 
+def get_communicator(when_upload_callback=_pass, when_download_callback=_pass):
+    for h in host_list:
+        try:
+            return Communicator(port, h, when_upload_callback, when_download_callback)
+        except (ConnectionRefusedError):
+            print(h, "FAILED")
+            continue
+
+
 def do_dir(direc, when_upload_callback=_pass, when_download_callback=_pass):
-    c = Communicator(when_upload_callback=when_upload_callback, when_download_callback=when_download_callback)
+    c = get_communicator(when_upload_callback=when_upload_callback, when_download_callback=when_download_callback)
     file_manager.add_dir(direc)
     Manager(c, direc)
     c.trigger_server_index_save()
 
 
 def do_single_file(path, when_upload_callback=_pass, when_download_callback=_pass):
-    c = Communicator(when_upload_callback=when_upload_callback, when_download_callback=when_download_callback)
+    c = get_communicator(when_upload_callback=when_upload_callback, when_download_callback=when_download_callback)
     file_manager.add_dir(path)
     Manager(c, single_file=path)
     c.trigger_server_index_save()

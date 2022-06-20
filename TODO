@@ -1,4 +1,5 @@
 ###################################################################
+-Add switching between hosts based on network
 -Finish UpdateAll
 -efficiency improvements
 -test single_file functionality
