@@ -156,6 +156,12 @@ class FileManager:
     def add_file_to_home_index(self, locfile):
         self.local_files_within_home_index[str(locfile.local_path)] = locfile
 
+    def remove_file(self, locfile):
+        if locfile.local_path in self.local_files_within_home_index:
+            self.local_files_within_home_index.pop(locfile.local_path)
+        if locfile.local_path.exists():
+            os.remove(locfile.local_path)
+
     def write_single_file(self, locfile):
         with open(single_file_to_home_file(locfile.local_path), "w+") as f:
             f.write(f"{locfile.local_path}\n")
@@ -202,6 +208,13 @@ class Manager:
             self.do_single_file(single_file)
             return
         self.search_dir = Path(search_dir)
+
+        file_manager.update_within_net_home(self.search_dir, self.comm)
+        file_manager.update_local_files_within_home_index(self.search_dir)
+        file_manager.update_local_files_not_in_home_index(self.search_dir)
+
+        self.remove_deactivated_files()
+
         self.download_missing_files()
         self.download_outdated()
         self.upload_missing_files()
@@ -232,10 +245,12 @@ class Manager:
             locfile.timestamp = int(os.path.getmtime(single_file))
             file_manager.write_single_file(locfile)
 
+    def remove_deactivated_files(self):
+        for n in file_manager.local_files_within_home_index:
+            if file_manager.local_files_within_home_index[n].ver < 0:
+                file_manager.remove_file(self.comm.send_remove_file(file_manager.local_files_within_home_index[n]))
+
     def download_missing_files(self):
-        file_manager.update_within_net_home(self.search_dir, self.comm)
-        file_manager.update_local_files_within_home_index(self.search_dir)
-        file_manager.update_local_files_not_in_home_index(self.search_dir)
         for n in file_manager.within_net_home:
             locfile = net_to_locfile(n)
             if str(locfile.local_path) not in file_manager.local_files_within_home_index or not locfile.local_path.exists():
@@ -299,6 +314,11 @@ class Communicator:
             req += self.sock.recv(chunk_size)
         return req[:-len(end_bytes)]
 
+    def send_remove_file(self, locfile: LocalFile):
+        netfile = loc_to_netfile(locfile)
+        self.sock.sendall(f"REQ_DEACTIVATE_FILE:{str(netfile.net_path)}\n".encode("ASCII"))
+        read_req(self.sock)
+
     def get_files_within_home(self, home):
         self.sock.sendall(f"REQ_FILES_IN_HOME:{str(home)}\n".encode("ASCII"))
         chunk_recved = self.massive_chunk(2**28).decode("ASCII")
@@ -311,7 +331,10 @@ class Communicator:
             if n == "":
                 break
             ns = n.split("///")
-            out.append(netfile_from_net_path(ns[0], int(ns[1])))
+            ver = int(ns[1])
+            out.append(netfile_from_net_path(ns[0], ver))
+            if ver < 0:
+                file_manager.remove_file(net_to_locfile(out[-1]))
         return out
 
     def get_file_ver(self, netfile):

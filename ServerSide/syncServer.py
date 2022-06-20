@@ -114,6 +114,28 @@ class FileManager:
     def get_ver(self, net_path):
         return self.stored_files[Path(net_path)].ver
 
+    def deactivate_file(self, locfile: LocalFile, negative_size=256):
+        """
+        Deletes a file and sets the file version to some large semi-arbitrary negative number.
+
+        :return:
+        """
+
+        if locfile.local_path.exists():
+            os.remove(locfile.local_path)
+        locfile.ver = -abs(negative_size)
+        self.stored_files[locfile.local_path] = locfile
+
+    def forget_file(self, locfile: LocalFile):
+        self.stored_files.pop(locfile.local_path)
+
+    def tick_deactivated_file(self, locfile: LocalFile):
+        locfile.ver += 1
+        if locfile.ver >= 0:
+            self.forget_file(locfile)
+            return
+        self.stored_files[locfile.local_path] = locfile
+
 
 def make_request(sock: socket, req: str):
     sock.sendall(f"{req}\n".encode("ASCII"))
@@ -138,7 +160,9 @@ class RequestHandler:
         elif request.split(b":")[0] == b"REQ_FILE_VER":
             self.file_ver_handler(Path(str(request.split(b":")[1])))
         elif request.split(b":")[0] == b"REQ_ADD_FILE":
-            self.file_add_handler(), "File_add_handler"
+            self.file_add_handler()
+        elif request.split(b":")[0] == b"REQ_DEACTIVATE_FILE":
+            self.deactivate_file(Path(str(request.split(b":")[1])))
         elif request == b"REQ_SERVER_SAVE":
             file_manager.write_stor()
         self.sock.settimeout(0.2)
@@ -149,6 +173,11 @@ class RequestHandler:
         while len(req) < len(end_bytes) or req[-len(end_bytes):] != end_bytes:
             req += self.sock.recv(chunk_size)
         return req[:-len(end_bytes)]
+
+    def deactivate_file(self, path):
+        locfile = file_manager.stored_files[path]
+        file_manager.deactivate_file(locfile)
+        self.sock.sendall(b"A")
 
     def file_add_handler(self):
         home = make_request(self.sock, "REQ_HOME").decode("ASCII")
@@ -204,6 +233,8 @@ class RequestHandler:
             self.sock.sendall(b"RESP_HOME_EMPTY\n\n")
             return
         for n in files_in_home:
+            if n.ver < 0:
+                file_manager.tick_deactivated_file(n)
             chunk_to_send += f"{n.local_path}///{n.ver}\n"
         self.sock.sendall(f"{chunk_to_send}\n\n".encode("ASCII"))
 
