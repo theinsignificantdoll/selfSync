@@ -1,5 +1,6 @@
 ###################################################################
 -Add the ability to delete files
+    -Fix not removing deleted files (from server) from the .local_files_within_home_index dictionary
 -Add switching between hosts based on network ( NEED TO TEST )
 -Finish UpdateAll ( NEED TO TEST )
 -efficiency improvements ( I MIGHT BE TOO LAZY FOR THIS ONE )
