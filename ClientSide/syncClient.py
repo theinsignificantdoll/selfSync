@@ -292,8 +292,6 @@ class Manager:
 
     def upload_locally_changed_files(self):
         for n in file_manager.local_files_within_home_index:
-            if not file_manager.local_files_within_home_index[n].local_path.exists():
-                continue
             if int(os.path.getmtime(file_manager.local_files_within_home_index[n].local_path)) > \
                     file_manager.local_files_within_home_index[n].timestamp:
 
