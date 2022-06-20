@@ -12,7 +12,7 @@
 X-fix client immediately uploading downloaded files
 X-make it update files that have been changed
 X-k.txt isn't downloaded? /CLIENTSIDE  ( BECAUSE OF END LINE "\n")
-X-Can't download files with anything in them? /CLIENTSIDE
+X-Can't download files with anything in them? f/CLIENTSIDE
 X-syncClient doesn't seem to make folders
 X-Fix bug that makes it stuck
 X-Add "run" scripts
