@@ -84,12 +84,13 @@ class NetFile:
 
 
 class FileManager:
-    def __init__(self):
+    def __init__(self, when_delete_callback=_pass):
         self.net_homes = {}  # USES Path OBJECTS
         self.local_homes = {}
         self.within_net_home = []
         self.local_files_within_home_index = {}  # {str(Local_Path): LocalFile}
         self.local_files_not_in_home_index = []
+        self.when_delete_callback = when_delete_callback
 
     def net_home_to_loc_home(self, net_home):
         try:
@@ -157,11 +158,15 @@ class FileManager:
         self.local_files_within_home_index[str(locfile.local_path)] = locfile
 
     def remove_file(self, locfile):
+        did_either = False
         if str(locfile.local_path) in self.local_files_within_home_index:
             self.local_files_within_home_index.pop(str(locfile.local_path))
+            did_either = True
         if locfile.local_path.exists():
             os.remove(locfile.local_path)
-
+            did_either = True
+        if did_either:
+            self.when_delete_callback(locfile)
     def write_single_file(self, locfile):
         with open(single_file_to_home_file(locfile.local_path), "w+") as f:
             f.write(f"{locfile.local_path}\n")
@@ -555,19 +560,21 @@ def get_communicator(when_upload_callback=_pass, when_download_callback=_pass):
     return False
 
 
-def do_dir(direc, when_upload_callback=_pass, when_download_callback=_pass):
+def do_dir(direc, when_upload_callback=_pass, when_download_callback=_pass, when_delete_callback=_pass):
     c = False
     while c is False:
         c = get_communicator(when_upload_callback=when_upload_callback, when_download_callback=when_download_callback)
+    file_manager.when_delete_callback = when_delete_callback
     file_manager.add_dir(direc)
     Manager(c, direc)
     c.trigger_server_index_save()
 
 
-def do_single_file(path, when_upload_callback=_pass, when_download_callback=_pass):
+def do_single_file(path, when_upload_callback=_pass, when_download_callback=_pass, when_delete_callback=_pass):
     c = False
     while c is False:
         c = get_communicator(when_upload_callback=when_upload_callback, when_download_callback=when_download_callback)
+    file_manager.when_delete_callback = when_delete_callback
     file_manager.add_dir(Path(path).parent)
     Manager(c, single_file=path)
     c.trigger_server_index_save()
