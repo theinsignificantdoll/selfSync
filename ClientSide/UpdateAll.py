@@ -37,6 +37,8 @@ def generate_notification_message():
         string += f"Downloaded {str(n)}\n"
     for n in deleted:
         string += f"Deleted {str(n)}\n"
+    if len(string) > 256:
+        return string[:256]
     return string.rstrip("\n")
 
 

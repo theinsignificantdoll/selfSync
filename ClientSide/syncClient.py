@@ -159,6 +159,10 @@ class FileManager:
 
     def remove_file(self, locfile):
         did_either = False
+        netfile = loc_to_netfile(locfile)
+        for n in self.within_net_home:
+            if n.path == netfile.path:
+                self.within_net_home.remove(n)
         if str(locfile.local_path) in self.local_files_within_home_index:
             self.local_files_within_home_index.pop(str(locfile.local_path))
             did_either = True
@@ -167,6 +171,7 @@ class FileManager:
             did_either = True
         if did_either:
             self.when_delete_callback(locfile)
+
     def write_single_file(self, locfile):
         with open(single_file_to_home_file(locfile.local_path), "w+") as f:
             f.write(f"{locfile.local_path}\n")
@@ -303,7 +308,8 @@ class Manager:
     def upload_locally_changed_files(self):
         for n in file_manager.local_files_within_home_index:
             if int(os.path.getmtime(file_manager.local_files_within_home_index[n].local_path)) > \
-                    file_manager.local_files_within_home_index[n].timestamp:
+                    file_manager.local_files_within_home_index[n].timestamp \
+                    and not file_manager.local_files_within_home_index[n].ver < 0:
 
                 self.comm.add_or_update_file(file_manager.local_files_within_home_index[n])
 
