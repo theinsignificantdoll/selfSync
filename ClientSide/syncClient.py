@@ -249,6 +249,11 @@ class Manager:
         for n in file_manager.local_files_within_home_index:
             if file_manager.local_files_within_home_index[n].ver < 0:
                 to_remove.append(file_manager.local_files_within_home_index[n])
+        for n in file_manager.within_net_home:
+            if n.ver < 0:
+                locfile = net_to_locfile(n)
+                if str(locfile.local_path) in to_remove:
+                    to_remove.append(str(locfile.local_path))
         for n in to_remove:
             file_manager.remove_file(n)
             self.comm.send_remove_file(n)
@@ -344,9 +349,6 @@ class Communicator:
             ns = n.split("///")
             ver = int(ns[1])
             netfile = netfile_from_net_path(ns[0], ver)
-            if ver < 0:
-                file_manager.remove_file(net_to_locfile(netfile))
-                continue
             out.append(netfile)
         return out
 
