@@ -17,6 +17,9 @@ class SimpleLocalFile:
         EVERYTHING IS A STRING
         """
 
+    def __repr__(self):
+        return f"SimpleLocalFile({self.string}, {self.ver}, {self.timestamp})"
+
 
 class FileHandler:
     def __init__(self, savefile=Path("savefile.txt")):
@@ -83,3 +86,11 @@ class IndexFileHandler:
 
         if temp_index_to_delete.exists():
             os.remove(temp_index_to_delete)
+
+    def register_deactivation(self, file: SimpleLocalFile):
+        for ind, n in enumerate(self.files):
+            if n == file:
+                self.files[ind].ver = "-1"
+                self.write_home_index()
+                print(self.files)
+                return

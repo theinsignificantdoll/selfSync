@@ -2,6 +2,8 @@
 -efficiency improvements ( I MIGHT BE TOO LAZY FOR THIS ONE )
 -don't request SERVER_SAVE if nothing happened
 -add deactivation of file through GUI
+-don't just continually attempt to connect if network unreachable ( not connected to the INTERNET, no valid server in
+ the in port-/host_list
 
 
 
