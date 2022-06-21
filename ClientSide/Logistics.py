@@ -4,6 +4,18 @@ import os
 
 temp_savefile = Path("tempsave.txt")
 temp_savefile_to_delete = Path("todelete.txt")
+temp_index = Path("temporary_index.txt")
+temp_index_to_delete = Path("index_to_delete.txt")
+
+
+class SimpleLocalFile:
+    def __init__(self, string, ver, timestamp):
+        self.string = string
+        self.ver = ver
+        self.timestamp = timestamp
+        """
+        EVERYTHING IS A STRING
+        """
 
 
 class FileHandler:
@@ -43,3 +55,31 @@ class FileHandler:
 
     def __repr__(self):
         return self.saved
+
+
+class IndexFileHandler:
+    def __init__(self, home_index):
+        self.home_index = home_index
+        self.files = []
+
+    def read_home_index(self):
+        with open(self.home_index, "r") as f:
+            while True:
+                line = f.readline().rstrip("\n")
+                if line == "":
+                    break
+                splitline = line.split("///")
+                self.files.append(SimpleLocalFile(splitline[0], splitline[1], splitline[2]))
+
+    def write_home_index(self):
+        with open(temp_index, "w+") as f:
+            for n in self.files:
+                f.write(f"{n.string}///{n.ver}///{n.timestamp}\n")
+        if temp_index_to_delete.exists():
+            os.remove(temp_index_to_delete)
+        os.rename(self.home_index, temp_index_to_delete)
+
+        os.rename(temp_index, self.home_index)
+
+        if temp_index_to_delete.exists():
+            os.remove(temp_index_to_delete)

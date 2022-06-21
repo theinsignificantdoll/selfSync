@@ -2,8 +2,10 @@
 import PySimpleGUI as sg
 from tkinter import filedialog
 from Logistics import FileHandler
+from pathlib import Path
 
 
+index_extension = ".index"
 sg.theme("DarkBrown4")
 
 
@@ -17,9 +19,6 @@ initialwinpos = (50, 50)
 
 file_handler = FileHandler()
 file_handler.read_savefile()
-
-
-shouldrestart = True
 
 
 def add_file_or_dir(directory):
@@ -90,10 +89,18 @@ class OpenWin:
 
     def restart(self):
         global shouldrestart
-        shouldrestart = True
+        shouldrestart = OpenWin
         self.close()
 
 
-while shouldrestart:
+class DeactivateFileWin:
+    def __init__(self, home):
+        self.home = Path(home).parts[-1]
+        self.home_index = f"{self.home}{index_extension}"
+
+
+
+shouldrestart = OpenWin
+while shouldrestart is not False:
+    shouldrestart()
     shouldrestart = False
-    OpenWin()
