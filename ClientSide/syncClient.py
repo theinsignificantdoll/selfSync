@@ -568,6 +568,7 @@ def do_dir(direc, when_upload_callback=_pass, when_download_callback=_pass, when
     file_manager.add_dir(direc)
     Manager(c, direc)
     c.trigger_server_index_save()
+    return True
 
 
 def do_single_file(path, when_upload_callback=_pass, when_download_callback=_pass, when_delete_callback=_pass):
@@ -578,3 +579,4 @@ def do_single_file(path, when_upload_callback=_pass, when_download_callback=_pas
     file_manager.add_dir(Path(path).parent)
     Manager(c, single_file=path)
     c.trigger_server_index_save()
+    return True
