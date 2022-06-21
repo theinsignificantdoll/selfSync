@@ -1,8 +1,4 @@
 ###################################################################
--Add the ability to delete files
-    -Fix not removing deleted files (from server) from the .local_files_within_home_index dictionary
--Add switching between hosts based on network ( NEED TO TEST )
--Finish UpdateAll ( NEED TO TEST )
 -efficiency improvements ( I MIGHT BE TOO LAZY FOR THIS ONE )
 -don't request SERVER_SAVE if nothing happened
 
@@ -10,6 +6,10 @@
 
 
 
+X-Finish UpdateAll ( NEED TO TEST )
+X-Add switching between hosts based on network ( NEED TO TEST )
+X-Add the ability to delete files
+    X-Fix not removing deleted files (from server) from the .local_files_within_home_index dictionary
 X-test single_file functionality
 X-fix client immediately uploading downloaded files
 X-make it update files that have been changed
