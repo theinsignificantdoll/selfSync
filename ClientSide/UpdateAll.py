@@ -77,10 +77,10 @@ if __name__ == "__main__":
     for n in file_handler.saved:
         if Path(n).is_dir():
             do_dir(Path(n), when_upload_callback=notify_upload, when_download_callback=notify_download,
-                   when_delete_callback=notify_delete)
+                   when_delete_callback=notify_delete, if_connection_fail=failed_to_connect)
         elif Path(n).is_file() or Path(n).suffix != "":
             do_single_file(Path(n), when_upload_callback=notify_upload, when_download_callback=notify_download,
-                           when_delete_callback=notify_delete)
+                           when_delete_callback=notify_delete, if_connection_fail=failed_to_connect)
         if connection_failed:
             break
 
