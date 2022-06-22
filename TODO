@@ -1,14 +1,14 @@
 ###################################################################
 -efficiency improvements ( I MIGHT BE TOO LAZY FOR THIS ONE )
--don't request SERVER_SAVE if nothing happened
--add deactivation of file through GUI
--don't just continually attempt to connect if network unreachable ( not connected to the INTERNET, no valid server in
- the in port-/host_list
 
 
 
 
 
+/-don't request SERVER_SAVE if nothing happened ( IRRELEVANT WITH THE ADDITION OF DEACTIVATED FILES)
+X-add deactivation of file through GUI
+X-don't just continually attempt to connect if network unreachable ( not connected to the INTERNET, no valid server in
+  the in port-/host_list
 X-Finish UpdateAll ( NEED TO TEST )
 X-Add switching between hosts based on network ( NEED TO TEST )
 X-Add the ability to delete files
