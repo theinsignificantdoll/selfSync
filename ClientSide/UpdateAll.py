@@ -29,6 +29,11 @@ def notify_delete(x: LocalFile):
     deleted.append(x)
 
 
+def failed_to_connect():
+    global connection_failed
+    connection_failed = True
+
+
 def generate_notification_message():
     string = ""
     for n in uploaded:
@@ -43,6 +48,8 @@ def generate_notification_message():
 
 
 def generate_header():
+    if connection_failed:
+        return "Failed to connect"
     out = ""
     if uploaded:
         out += "Uploaded"
@@ -65,6 +72,7 @@ def generate_header():
 if __name__ == "__main__":
     file_handler = Logistics.FileHandler()
     file_handler.read_savefile()
+    connection_failed = False
 
     for n in file_handler.saved:
         if Path(n).is_dir():
@@ -73,6 +81,8 @@ if __name__ == "__main__":
         elif Path(n).is_file() or Path(n).suffix != "":
             do_single_file(Path(n), when_upload_callback=notify_upload, when_download_callback=notify_download,
                            when_delete_callback=notify_delete)
+        if connection_failed:
+            break
 
     if notifications:
         notification.notify(title=generate_header(),

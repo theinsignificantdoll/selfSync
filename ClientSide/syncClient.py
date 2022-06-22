@@ -31,7 +31,7 @@ def read_req(sock):
     return req.rstrip(b"\n")
 
 
-def _pass(_):
+def _pass(_=None):
     pass
 
 
@@ -566,10 +566,13 @@ def get_communicator(when_upload_callback=_pass, when_download_callback=_pass):
     return False
 
 
-def do_dir(direc, when_upload_callback=_pass, when_download_callback=_pass, when_delete_callback=_pass):
-    c = False
-    while c is False:
-        c = get_communicator(when_upload_callback=when_upload_callback, when_download_callback=when_download_callback)
+def do_dir(direc, when_upload_callback=_pass, when_download_callback=_pass, when_delete_callback=_pass,
+           if_connection_fail=_pass):
+    c = get_communicator(when_upload_callback=when_upload_callback, when_download_callback=when_download_callback)
+    if not c:
+        if_connection_fail()
+        return False
+
     file_manager.when_delete_callback = when_delete_callback
     file_manager.add_dir(direc)
     Manager(c, direc)
@@ -577,10 +580,13 @@ def do_dir(direc, when_upload_callback=_pass, when_download_callback=_pass, when
     return True
 
 
-def do_single_file(path, when_upload_callback=_pass, when_download_callback=_pass, when_delete_callback=_pass):
-    c = False
-    while c is False:
-        c = get_communicator(when_upload_callback=when_upload_callback, when_download_callback=when_download_callback)
+def do_single_file(path, when_upload_callback=_pass, when_download_callback=_pass, when_delete_callback=_pass,
+                   if_connection_fail=_pass):
+    c = get_communicator(when_upload_callback=when_upload_callback, when_download_callback=when_download_callback)
+    if not c:
+        if_connection_fail()
+        return False
+
     file_manager.when_delete_callback = when_delete_callback
     file_manager.add_dir(Path(path).parent)
     Manager(c, single_file=path)
